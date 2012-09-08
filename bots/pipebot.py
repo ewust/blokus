@@ -1,5 +1,8 @@
-﻿"""Abstract AI Bot class to be overridden by players"""
-class Bot(object):
+﻿from common import *
+
+"""Pipes game events between the server and bots implemented outside of the
+   python client application using stdio"""
+class PipeBot(Bot):
     """Initializes the bot for a new game"""
     def init(self, player_id, board):
         raise NotImplementedError()
