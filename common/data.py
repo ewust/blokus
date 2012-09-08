@@ -1,15 +1,14 @@
-﻿import struct
-from collections import namedtuple
+﻿import collections
+import struct
 
-Point = namedtuple("Point", ["x", "y"])
-Block = namedtuple("Block", ["piece_id", "player_id", "is_empty"])
+Point = collections.namedtuple("Point", ["x", "y"])
+Block = collections.namedtuple("Block", ["piece_id", "player_id", "is_empty"])
 
 class Piece(object):
-	"""data is an ASCII representation of the piece"""
-	def __init__(self, id, player_id, data):
+	"""coords is a list of coordinates that this piece occupies"""
+	def __init__(self, id, coords):
 		self.id = id
-		self.player_id = player_id
-		raise NotImplementedError()
+		self.coords = coords
 		
 	"""Gets a copy of this piece rotated clockwise by the specified number of steps"""
 	def get_rotation(self, steps):
@@ -39,11 +38,15 @@ class Board(object):
 		data = struct.unpack(data_format, self.data[position.x][position.y]))
 		return Block(data[0], data[1], data[0] == null_piece_id)
 	
-	def place_piece(self, position, piece):
-		def set_block(data, position, piece_id, player_id):
-			raise NotImplementedError()
-			
-		raise NotImplementedError()
+	def get_piece(self, piece_id):
+		assert piece_id < len(self.pieces)
+		return self.pieces[piece_id]
+	
+	def place_piece(self, position, piece, player_id):
+		for coord in piece.coords:
+			x = coord.x + position.x
+			y = coord.y + position.y
+			self.data[x][y] = struct.pack(data_format, piece_id, player_id)
 		
 	def get_remaining_pieces(self, player_id):
 		raise NotImplementedError()
