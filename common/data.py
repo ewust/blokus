@@ -29,7 +29,7 @@ class Board(object):
 
 	"""Network order (big-endian), Piece ID (ushort), Player ID (uchar)"""
 	block_format = "!HB"
-	null_block = pack(data_format, 0xFFFF, 0xFF)
+	null_block = pack(block_format, 0xFFFF, 0xFF)
 	
 	def __init__(self, pieces, size, player_count):
 		self.pieces = pieces
@@ -38,7 +38,7 @@ class Board(object):
 	
 	def get_block(self, position):
 		assert position.x < size and position.y < size
-		data = unpack(data_format, self.data[position.x][position.y]))
+		data = unpack(block_format, self.data[position.x][position.y]))
 		return Block(data[0], data[1], data[0] == null_piece_id)
 	
 	def get_piece(self, piece_id):
@@ -49,7 +49,7 @@ class Board(object):
 		for coord in piece.coords:
 			x = coord.x + position.x
 			y = coord.y + position.y
-			self.data[x][y] = pack(data_format, piece_id, player_id)
+			self.data[x][y] = pack(block_format, piece_id, player_id)
 		
 	def get_remaining_pieces(self, player_id):
 		raise NotImplementedError()

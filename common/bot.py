@@ -9,7 +9,7 @@ class Bot(object):
 		raise NotImplementedError()
 	
 	"""Reports a move made by another player to this bot"""
-	def report_move(self, position, piece, player_id):
+	def report_move(self, move):
 		raise NotImplementedError()
 	
 	"""Reports a status message from the server to this bot"""
