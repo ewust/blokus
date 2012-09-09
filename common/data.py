@@ -1,4 +1,5 @@
-﻿import unittest
+﻿import math
+import unittest
 
 from collections import namedtuple
 from copy import deepcopy
@@ -11,7 +12,6 @@ DEFAULT_BOARD_SIZE = 20
 DEFAULT_PLAYER_COUNT = 4
 
 Point = namedtuple("Point", ["x", "y"])
-AABB = namedtuple("AABB", ["a", "b"])
 Move = namedtuple("Move", ["position", "piece", "player_id"])
 _Block = namedtuple("Block", ["piece_id", "player_id", "is_empty"])
 
@@ -22,45 +22,55 @@ class Piece(object):
     _cos_table = [ 1, 0, -1, 0 ]
     _sin_table = [ 0, 1, 0, -1 ]
 
-    """coords is a list of coordinates that this piece occupies"""
-    def __init__(self, id, coords):
+    """
+    size = the length of the longest axis of the piece
+    coords = a list of coordinates that this piece occupies
+    """
+    def __init__(self, id, size, coords):
         self.id = id
         self.coords = coords
+        self.size = size
+        half_size = math.floor(size / 2)
+        if size % 2 == 0:
+            half_size += 1
+        self.center = Point(half_size, half_size)
+        
+        for coord in coords:
+            assert coord.x < size and coord.y < size
     
     """Constructs a Piece object from an ascii art representation of the desired shape"""
     @staticmethod
     def from_string(id, string):
         string = string.strip()
+        max_x = 0
+        max_y = string.count("\n")
         x = 0
-        y = string.count("\n")
+        y = max_y
         coords = []
         for i in range(len(string)):
             if string[i] == ".":
                 x += 1
             elif string[i] == "\n":
+                if x > max_x:
+                    max_x = x
+            
                 x = 0
                 y -= 1
             else:
                 coords.append(Point(x, y))
                 x += 1
         
-        return Piece(id, coords)
+        return Piece(id, max(max_x, max_y), coords)
     
     def __repr__(self):
-        bounds = self.get_bounds()
-        width = bounds.b.x - bounds.a.x
-        height = bounds.b.y - bounds.a.y
-        
-        def create_line(width):
-            line = ["." for i in range(width + 1)]
+        def create_line(size):
+            line = ["." for i in range(size)]
             line.append("\n")
             return line
-            
-        grid = [create_line(width) for i in range(height + 1)]
+        
+        grid = [create_line(self.size) for i in range(self.size)]
         for coord in self.coords:
-            x = coord.x - bounds.a.x
-            y = coord.y - bounds.a.y
-            grid[height - coord.y][coord.x] = "O"
+            grid[self.size - coord.y - 1][coord.x] = "O"
         
         grid_string = "".join(["".join(line) for line in grid])
         
@@ -75,26 +85,6 @@ class Piece(object):
                 return False
                 
         return True
-    
-    def get_bounds(self):
-        default = self.coords[0]
-        min_x = default.x
-        min_y = default.y
-        max_x = default.x
-        max_y = default.y
-        
-        for c in self.coords:
-            if c.x < min_x:
-                min_x = c.x
-            elif c.x > max_x:
-                max_x = c.x
-            
-            if c.y < min_y:
-                min_y = c.y
-            elif c.y > max_y:
-                max_y = c.y
-                
-        return AABB(Point(min_x, min_y), Point(max_x, max_y));
         
     """Gets a copy of this piece rotated counter-clockwise by the specified number of steps"""
     def get_rotation(self, steps):
@@ -105,42 +95,37 @@ class Piece(object):
         steps = steps % 4
         if steps == 0:
             return rotation
-            
-        def midpoint(a, b):
-            sum = a + b
-            mid = (a + b) / 2
-            if sum % 2 == 0:
-                mid += 1
-                
-            return mid
         
-        bounds = self.get_bounds()
-        center = Point(midpoint(bounds.a.x, bounds.b.x), midpoint(points.a.y, points.b.y))
-        normalized_coords = [ Point(c.x - center.x, c.y - center.y) for c in self.coords ]
+        normalized_coords = [ Point(c.x - self.center.x, c.y - self.center.y) for c in self.coords ]
         
         cos = Piece._cos_table[steps]
         sin = Piece._sin_table[steps]
         rotation.coords = [ 
-            Point(c.x * cos - c.y * sin + center.x,
-                  c.x * sin + c.y * cos + center.y)
+            Point(c.x * cos - c.y * sin + self.center.x,
+                  c.x * sin + c.y * cos + self.center.y)
             for c in normalized_coords ]
         
         return rotation
     
     """Gets the number of steps the given piece was rotated by to arrive at this piece"""
     def get_rotation_steps(self, piece):
-        assert is_rotation(self, piece)
-        raise NotImplementedError()
+        rotations = [self.get_rotation(i) for i in range(4)]
+        for i in range(4):
+            if rotations[i].equals(piece):
+                return i
+                
+        raise ValueError("piece is not a valid rotation of this piece")
+            
     
     """Determines whether this piece is a valid rotation of the specified piece"""
     def is_rotation(self, piece):
         rotations = [self.get_rotation(r) for r in range(4)]
         
         for rotation in rotations:
-            if not rotation.equals(piece):
-                return False
+            if rotation.equals(piece):
+                return True
                 
-        return True
+        return False
         
 class Board(object):
     """Network order (big-endian), Piece ID (ushort), Player ID (uchar)"""
