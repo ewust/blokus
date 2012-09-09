@@ -12,7 +12,7 @@ class DummyBot(Bot):
     """Must return a Move object"""
     def get_move(self):
         for piece in self.remaining_pieces:
-            for rotation in [piece.get_rotation(i) for i in xrange(4)]:
+            for rotation in [piece.get_rotation(i) for i in range(4)]:
                 for x in xrange(self.board.size):
                     for y in xrange(self.board.size):
                         move = Move(Point(x, y), rotation, self.player_id)
