@@ -1,11 +1,16 @@
-﻿from common import *
+﻿# vim: ts=4 et sw=4 sts=4
+
+from common import *
 from copy import copy
 
 """Dumbest bot that can play the game"""
 class DummyBot(Bot):
     """Initializes the bot for a new game"""
-    def init(self, player_id, board):
-        self.board = board
+    def init(self, player_id, board=None):
+        if (board):
+            self.board = board
+        else:
+            self.board = Board()
         self.player_id = player_id
         self.remaining_pieces = copy(board.pieces)
     
