@@ -1,4 +1,5 @@
 ﻿import math
+import string
 import unittest
 
 from collections import namedtuple
@@ -18,9 +19,14 @@ _Block = namedtuple("Block", ["piece_id", "player_id", "is_empty"])
 def Block(piece_id, player_id):
     return _Block(piece_id, player_id, piece_id == EMPTY_PIECE_ID or player_id == EMPTY_PLAYER_ID)
 
+"""
+A piece represented as a set of coordinates.  No optimization here, just the
+most generic representation of a piece that allows for the rules to be changed.
+Make assumptions in your bots if you want a different representation.
+"""
 class Piece(object):
-    _cos_table = [ 1, 0, -1, 0 ]
-    _sin_table = [ 0, 1, 0, -1 ]
+    _cos_table = [1, 0, -1, 0]
+    _sin_table = [0, 1, 0, -1]
 
     """
     size = the length of the longest axis of the piece
@@ -38,24 +44,37 @@ class Piece(object):
         for coord in coords:
             assert coord.x < size and coord.y < size
     
-    """Constructs a Piece object from an ascii art representation of the desired shape"""
+    """
+    Constructs a Piece object from an ascii art representation of the desired
+    shape. For example:
+        ...O
+        ...O
+        ...O
+        OOOO
+        
+    Dots represent a blank space and non-whitespace characters represent
+    filled blocks.  The '\n' character is used to delimit rows and calculate
+    the height of the Piece.
+    """
     @staticmethod
-    def from_string(id, string):
-        string = string.strip()
+    def from_string(id, s):
+        s = s.strip()
         max_x = 0
-        max_y = string.count("\n")
+        max_y = s.count("\n")
         x = 0
         y = max_y
         coords = []
-        for i in range(len(string)):
-            if string[i] == ".":
+        for i in range(len(s)):
+            if s[i] == ".":
                 x += 1
-            elif string[i] == "\n":
+            elif s[i] == "\n":
                 if x > max_x:
                     max_x = x
             
                 x = 0
                 y -= 1
+            elif s[i] in string.whitespace:
+                pass
             else:
                 coords.append(Point(x, y))
                 x += 1
@@ -103,7 +122,7 @@ class Piece(object):
         rotation.coords = [ 
             Point(c.x * cos - c.y * sin + self.center.x,
                   c.x * sin + c.y * cos + self.center.y)
-            for c in normalized_coords ]
+            for c in normalized_coords]
         
         return rotation
     
@@ -115,8 +134,7 @@ class Piece(object):
                 return i
                 
         raise ValueError("piece is not a valid rotation of this piece")
-            
-    
+        
     """Determines whether this piece is a valid rotation of the specified piece"""
     def is_rotation(self, piece):
         rotations = [self.get_rotation(r) for r in range(4)]
@@ -126,13 +144,25 @@ class Piece(object):
                 return True
                 
         return False
-        
+
+"""
+The full game state.  Note that this is written avoiding any assumptions about
+how bots will use the data.  In other words, we give you interfaces to access
+the board block-by-block, to access pieces associated with those blocks, and
+to get information about per player pieces, but there are no optimizations.
+The Board class holds the minimum state required to fully represent the game
+and the helper functions are provided for convenience only.  More efficient
+algorithms are the server and bots' responsibility.
+
+For example, the server might subclass Board and implement caching of
+remaining pieces of each player for efficiency.
+"""
 class Board(object):
     """Network order (big-endian), Piece ID (ushort), Player ID (uchar)"""
     _block_format = "!HB"
     
     def __init__(self, pieces, size=DEFAULT_BOARD_SIZE, player_count=DEFAULT_PLAYER_COUNT):
-        self.pieces = pieces
+        self.pieces = set(pieces)
         self.size = size
         self.player_count = player_count
         
@@ -152,10 +182,34 @@ class Board(object):
         assert piece_id < len(self.pieces)
         return self.pieces[piece_id]
     
-    def get_remaining_pieces(self, player_id):
-        raise NotImplementedError()
+    def get_used_pieces(self, player_id):
+        used_pieces = set()
+        for x in range(self.size):
+            for y in range(self.size):
+                block = self.get_block(Point(x, y))
+                if block.player_id == player_id and not block.piece_id in used_pieces:
+                    used_pieces.add(block.piece_id)
+                    
+        return used_pieces
     
+    def get_remaining_pieces(self, player_id):
+        return self.pieces - get_used_pieces(player_id)
+
     def is_valid_move(self, move):
+        if move.piece_id >= len(self.pieces):
+            return False
+        
+        if not move.piece_id in get_remaining_pieces(move.player_id):
+            return False
+        
+        for coord in move.piece.coords:
+            block = self.get_block(coord)
+            if not block.is_empty:
+                return False
+                
+        return True
+    
+    def is_valid_first_move(self, move):
         raise NotImplementedError()
     
     def apply_move(self, move):

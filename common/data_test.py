@@ -85,27 +85,19 @@ OO.
             self.assertTrue(rotation.is_rotation(original))  
         
 class BoardTests(unittest.TestCase):
-    _pieces_text = [
-        """
-        .O.
-        OOO
-        ...
-        """,
-        """
-        .O.
-        OO.
-        .O.
-        """,
-        """
-        ...
-        OOO
-        .O.
-        """,
-        """
-        .O.
-        .OO
-        .O.
-        """ ]
+    def get_pieces():
+        pieces_text = [
+            """
+            .O.
+            OOO
+            ...
+            """]
+            
+        pieces = []
+        for i in range(len(pieces_text)):
+            pieces.append(Piece.from_string(i, pieces_text[i]))
+            
+        return pieces
 
     def test_block_data(self):
         pass
