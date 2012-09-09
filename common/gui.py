@@ -32,18 +32,49 @@ class BlockusBoard:
             self.menu_line.pack_start(e)
 
     def build_board(self):
-        self.board['boxes'] = []
+        def sq(size):
+            return gtk.gdk.Rectangle(width=size, height=size)
 
-        table = gtk.Table(self.rows, self.cols, True)
-        self.board['table'] = table
-        self.board['container'].pack_start(table)
+        fmt = []
+        for c in xrange(self.cols):
+            fmt.append(gtk.gdk.Pixbuf)
+        liststore = gtk.ListStore(*fmt)
+
+        tv_cols = []
+        for c in xrange(self.cols):
+            tv_cols.append(gtk.TreeViewColumn(str(c)))
+
+        self.blocks = {
+                'empty' : gtk.gdk.pixbuf_new_from_file('resources/block_empty.png'),
+                'red' : gtk.gdk.pixbuf_new_from_file('resources/block_red.png'),
+                'blue' : gtk.gdk.pixbuf_new_from_file('resources/block_blue.png'),
+                'green' : gtk.gdk.pixbuf_new_from_file('resources/block_green.png'),
+                'yellow' : gtk.gdk.pixbuf_new_from_file('resources/block_yellow.png'),
+                }
 
         for r in xrange(self.rows):
-            self.board['boxes'].append([])
+            row = []
             for c in xrange(self.cols):
-                box = gtk.Button(label='('+str(r)+','+str(c)+')')
-                table.attach(box, r, r+1, c, c+1)
-                self.board['boxes'][r].append(box)
+                row.append(self.blocks['empty'])
+            liststore.append(row)
+
+        treeview = gtk.TreeView(liststore)
+
+        for c in tv_cols:
+            treeview.append_column(c)
+            cell = gtk.CellRendererPixbuf()
+            c.pack_start(cell)
+            c.set_attributes(cell, pixbuf=tv_cols.index(c))
+
+        treeview.set_headers_clickable(False)
+        treeview.set_rules_hint(False)
+        treeview.set_enable_search(False)
+        #treeview.set_fixed_height_mode(True)
+        treeview.set_headers_visible(False)
+        treeview.set_grid_lines(gtk.TREE_VIEW_GRID_LINES_NONE)
+
+        treeview.get_selection().set_mode(gtk.SELECTION_NONE)
+        self.board['container'].pack_start(treeview)
 
     def build_status_line(self):
         self.status_line_elements = []
