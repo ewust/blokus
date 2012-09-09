@@ -1,9 +1,15 @@
+# vim: ts=4 et sw=4 sts=4
+
+import sys
+import os, errno
 from twisted.internet import ssl, reactor
 from twisted.internet.protocol import Factory, Protocol
 from OpenSSL import SSL
 import OpenSSL
+
+# We'll do this properly later
+sys.path.append('../')
 from common import logger
-import sys
 
 SERVER_CERT_FILE='server.crt'
 SERVER_KEY_FILE='server.key'
@@ -11,7 +17,7 @@ SERVER_KEY_FILE='server.key'
 # A directory where we store the self-signed certificates
 # for each player
 CLIENT_CERT_DIR='./player_certs/'
-CLIENT_CERTS_FILE='./player_certs/all.crt'
+CLIENT_CERTS_FILE=CLIENT_CERT_DIR+'/all.crt'
 
 
 
@@ -121,7 +127,13 @@ if __name__ == '__main__':
         SSL.VERIFY_PEER | SSL.VERIFY_FAIL_IF_NO_PEER_CERT,
         verifyCallback
         )
-    ctx.load_verify_locations(CLIENT_CERTS_FILE, CLIENT_CERT_DIR)
-     
+
+    try:
+        with file(CLIENT_CERTS_FILE, 'r'):
+            ctx.load_verify_locations(CLIENT_CERTS_FILE, CLIENT_CERT_DIR)
+    except IOError as exc:
+        if exc.errno == errno.ENOENT:
+            pass
+
     reactor.listenSSL(4434, factory, ctx_factory)
     reactor.run()
