@@ -2,7 +2,7 @@ from twisted.internet import ssl, reactor
 from twisted.internet.protocol import Factory, Protocol
 from OpenSSL import SSL
 import OpenSSL
-import logger
+from common import logger
 import sys
 
 SERVER_CERT_FILE='server.crt'
