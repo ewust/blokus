@@ -8,14 +8,18 @@ import sys
 # point this to /etc/ssl/certs/ca-certificates.crt :)
 CA_CERT_FILE='server.crt'
 
-# Client-generated 
+# Client-generated certificate (use ./make_cert.sh)
 CLIENT_CERT_FILE = 'client.crt'
 CLIENT_KEY_FILE = 'client.key'
 
+"""Server Communication uses SSL+Protocol Buffers"""
 class ServerComm(object):
+
+    """Initialized each new game"""
     def __init__(self, server=("127.0.0.1", 4434)):
         self.server = server
 
+    """Connects and authenticates to server"""
     def join_game(self):
     
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -32,8 +36,8 @@ class ServerComm(object):
         pass
 
 
-    # Call this to wait for the server to send us messages
-    def game_loop(self, addr=('127.0.0.1', 4433)):
+    """Blocking "event" loop - waits for the server to send us messages"""
+    def game_loop(self):
 
         data = self.ssl_sock.read()
         while data:
@@ -58,7 +62,6 @@ if __name__ == "__main__":
     comms = ServerComm(server=("127.0.0.1", 4434))
     comms.join_game()
 
-    #print comms.ssl_sock.getpeercert()
     comms.game_loop()
  
     
