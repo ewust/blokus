@@ -47,13 +47,11 @@ class ServerConnection(object):
             elif m.message_object == 'END':
                 return False
             else:
-                print "==========================="
-                print m
-                print m.message_object
-                print "==========================="
                 raise NotImplementedError, "Unknown control message " + str(m)
         elif m.message_type is Message.TYPE_MOVE:
             bot.report_move(m.message_object)
+        elif m.message_type is Message.TYPE_STATUS:
+            bot.report_move(*m.message_object)
         else:
             raise NotImplementedError, "Unknown message type " + str(m)
         return True

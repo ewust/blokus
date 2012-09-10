@@ -212,7 +212,7 @@ class Board(object):
         self._data = [[null_block] * size for x in range(size)]
     
     def get_block(self, position):
-        assert position.x < size and position.y < size
+        assert position.x < self.size and position.y < self.size
         block_data = unpack(Board._block_format, self._data[position.x][position.y])
         return Block(block_data[0], block_data[1])
     
@@ -235,13 +235,13 @@ class Board(object):
         return used_pieces
     
     def get_remaining_pieces(self, player_id):
-        return self.pieces - get_used_pieces(player_id)
+        return self.pieces - self.get_used_pieces(player_id)
 
     def is_valid_move(self, move):
-        if move.piece_id >= len(self.pieces):
+        if move.piece.piece_id >= len(self.pieces):
             return False
         
-        if not move.piece_id in get_remaining_pieces(move.player_id):
+        if not move.piece.piece_id in self.get_remaining_pieces(move.player_id):
             return False
         
         for coord in move.piece.coords:

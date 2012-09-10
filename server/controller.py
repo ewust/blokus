@@ -5,6 +5,7 @@ import threading
 
 from common.communication import Message
 from common.data import Board
+from common.bot import Bot
 
 from Clear_server import ClearServer as Server
 
@@ -53,6 +54,11 @@ class BasicGame(Game):
             self.go_sem[player_id].acquire()
             Message.serialized(l.sock, Message.TYPE_CONTROL, "TURN")
             m = Message(l.sock, Message.TYPE_MOVE)
+            move = m.message_object
+
+            if not self.board.is_valid_move(move):
+                Message.serialized(l.sock, Message.TYPE_STATUS,\
+                        [Bot.STATUS_SKIPPED, "Illegal Move"])
 
             if l.others is None:
                 l.others = list(self.socks)
