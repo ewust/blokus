@@ -13,9 +13,15 @@ class ClearServer(object):
         s.listen(10)
         self.sock = s
 
+        self.hacks = []
+
     def addr_to_username(self, addr):
         # XXX Handled in SSL by certs, etc, need a parallel
-        return "uniqname"
+        try:
+            return "uniq" + str(self.hacks.index(addr))
+        except ValueError:
+            self.hacks.append(addr)
+            return self.addr_to_username(addr)
 
     def get_connection(self):
         conn, addr = self.sock.accept()

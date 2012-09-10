@@ -26,7 +26,7 @@ class BasicGame(Game):
         m = Message(l.sock)
         if not m.match(Message.TYPE_CONTROL, "JOIN"):
             raise
-        print "Got JOIN"
+        print "Got JOIN from " + l.user
 
         from time import sleep
         while True:
