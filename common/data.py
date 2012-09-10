@@ -237,11 +237,18 @@ class Board(object):
     def get_remaining_pieces(self, player_id):
         return self.pieces - get_used_pieces(player_id)
 
-    def is_valid_move(self, move):
-        if move.piece_id >= len(self.pieces):
+    def is_valid_piece(self, piece):
+        if piece.piece_id >= len(self.pieces):
             return False
         
-        if not move.piece_id in get_remaining_pieces(move.player_id):
+        actual = self.pieces[piece_id]
+        return actual.is_rotation(piece):
+        
+    def is_valid_move(self, move):
+        if not self.is_valid_piece(move.piece):
+            return False
+        
+        if not move.piece.piece_id in get_remaining_pieces(move.player_id):
             return False
         
         for coord in move.piece.coords:
@@ -251,8 +258,25 @@ class Board(object):
                 
         return True
     
+    """
+    On the first move, players are only allowed to place pieces that touch
+    corners of the board. This returns whether the specified move is valid as
+    a first move for any given player.  A move is valid if the piece is valid
+    and it touches a corner
+    """
     def is_valid_first_move(self, move):
-        raise NotImplementedError()
+        if not self.is_valid_piece(move.piece):
+            return False
+        
+        max_value = self.size - 1
+        for coord in move.piece.coords:
+            if ((coord.x == 0 and coord.y == 0) or
+                (coord.x == 0 and coord.y == max_value) or
+                (coord.x == max_value and coord.y == max_value) or
+                (coord.x == max_value and coord.y == 0)):
+                return True
+                
+        return False
     
     def apply_move(self, move):
         for coord in move.piece.coords:

@@ -64,6 +64,15 @@ id=0
 .O.
 OO.
 """.strip())
+
+    def test_create_from_repr(self):
+        text = """
+.O.
+.O.
+OOO
+"""
+        piece = Piece.from_string(1, text)
+        self.assertTrue(piece.equals(Piece.from_repr(str(piece))))
     
     def test_get_rotation(self):
         rotations = self.get_test_rotations()
@@ -101,4 +110,5 @@ class BoardTests(unittest.TestCase):
 
     def test_block_data(self):
         pass
+        
         
