@@ -1,4 +1,6 @@
-﻿import math
+﻿# vim: ts=4 et sw=4 sts=4
+
+import math
 import unittest
 
 from collections import namedtuple
@@ -131,8 +133,12 @@ class Board(object):
     """Network order (big-endian), Piece ID (ushort), Player ID (uchar)"""
     _block_format = "!HB"
     
-    def __init__(self, pieces, size=DEFAULT_BOARD_SIZE, player_count=DEFAULT_PLAYER_COUNT):
-        self.pieces = pieces
+    def __init__(self, pieces=None, size=DEFAULT_BOARD_SIZE, player_count=DEFAULT_PLAYER_COUNT):
+        if (pieces):
+            self.pieces = pieces
+        else:
+            # Default set of pieces
+            raise NotImplementedError, "Default pieces"
         self.size = size
         self.player_count = player_count
         
