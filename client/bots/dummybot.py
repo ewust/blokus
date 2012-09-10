@@ -1,6 +1,6 @@
 ﻿# vim: ts=4 et sw=4 sts=4
 
-from common import *
+from common.bot import Bot
 from copy import copy
 
 """Dumbest bot that can play the game"""

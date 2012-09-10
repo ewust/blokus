@@ -1,7 +1,10 @@
+# vim: ts=4 et sw=4 sts=4
+
 import ssl
 import socket
-import logger
 import sys
+
+from common import logger
 
 # This should point to the server's self-signed certificate.
 # Alternatively, you can use a signed certificate, and 
@@ -12,15 +15,13 @@ CA_CERT_FILE='server.crt'
 CLIENT_CERT_FILE = 'client.crt'
 CLIENT_KEY_FILE = 'client.key'
 
-"""Server Communication uses SSL+Protocol Buffers"""
-class ServerComm(object):
+class SSL_Connection(object):
 
-    """Initialized each new game"""
     def __init__(self, server=("127.0.0.1", 4434)):
         self.server = server
 
     """Connects and authenticates to server"""
-    def join_game(self):
+    def connect(self):
     
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
@@ -32,26 +33,8 @@ class ServerComm(object):
 
         self.ssl_sock.connect(self.server)
 
-        # Send join message?
-        pass
-
-
-    """Blocking "event" loop - waits for the server to send us messages"""
-    def game_loop(self):
-
-        data = self.ssl_sock.read()
-        while data:
-            
-            data = self.ssl_sock.read()
-
- 
-    def handle_server_stream(self, server_stream):
-        data = self.server_stream.read()
-        while data:
-            print data
-            data = self.server_stream.read()
-        print 'no more data :('
-
+    def get_socket(self):
+        return self.ssl_sock
 
 if __name__ == "__main__":
     # Unit test for server communication
@@ -59,9 +42,6 @@ if __name__ == "__main__":
     logger.setLogger(logger.FileLogger(sys.stdout))
     logger.setLogLevel(logger.DEBUG)
 
-    comms = ServerComm(server=("127.0.0.1", 4434))
-    comms.join_game()
+    conn = SSL_Connection(server=("127.0.0.1", 4434))
+    conn.connect()
 
-    comms.game_loop()
- 
-    
