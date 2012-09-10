@@ -1,7 +1,10 @@
 ﻿# vim: ts=4 et sw=4 sts=4
 
-from common.bot import Bot
 from copy import copy
+
+from common.data import Move
+from common.data import Point
+from common.bot import Bot
 
 """Dumbest bot that can play the game"""
 class DummyBot(Bot):
