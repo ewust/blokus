@@ -82,7 +82,36 @@ class Piece(object):
                 x += 1
         
         return Piece(id, max(max_x, max_y), coords)
-    
+
+    @staticmethod
+    def default_pieces():
+        pieces_text = [
+"""
+.O.
+.OO
+OO.
+""",
+"""
+.O.
+.O.
+OO.
+""",
+"""
+OO.
+.O.
+OO.
+""",
+"""
+.O.
+.O.
+OOO
+""",
+]
+        pieces = []
+        for i in range(len(pieces_text)):
+            pieces.append(Piece.from_string(i, pieces_text[i]))
+        return pieces
+
     def __repr__(self):
         def create_line(size):
             line = ["." for i in range(size)]
@@ -168,7 +197,7 @@ class Board(object):
             self.pieces = set(pieces)
         else:
             # Default set of pieces
-            raise NotImplementedError, "Default pieces"
+            self.pieces = set(Piece.default_pieces())
         self.size = size
         self.player_count = player_count
         
