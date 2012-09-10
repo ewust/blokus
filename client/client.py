@@ -16,8 +16,8 @@ class Client():
 
     def go(self):
         while True:
-            self.bot = Bot()
-            self.server.join_game()
+            board = self.server.join_game()
+            self.bot = Bot(board=board)
             while (self.server.game_loop(self.bot)):
                 pass
 
