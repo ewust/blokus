@@ -81,7 +81,7 @@ class Piece(object):
                 coords.append(Point(x, y))
                 x += 1
         
-        return Piece(piece_id, max(max_x, max_y), coords)
+        return Piece(piece_id, max(max_x, max_y + 1), coords)
 
     @staticmethod
     def from_repr(s):
@@ -182,34 +182,6 @@ class Board(object):
         null_block = pack(Board._block_format, EMPTY_PIECE_ID, EMPTY_PLAYER_ID)
         self._data = [[null_block] * size for x in range(size)]
     
-    @staticmethod
-    def get_default_pieces():
-        pieces_text = [
-"""
-.O.
-.OO
-OO.
-""",
-"""
-.O.
-.O.
-OO.
-""",
-"""
-OO.
-.O.
-OO.
-""",
-"""
-.O.
-.O.
-OOO
-"""]
-        pieces = []
-        for i in range(len(pieces_text)):
-            pieces.append(Piece.from_string(i, pieces_text[i]))
-        return pieces
-    
     def get_block(self, position):
         assert position.x < size and position.y < size
         block_data = unpack(Board._block_format, self._data[position.x][position.y])
@@ -282,3 +254,137 @@ OOO
             x = coord.x + move.position.x
             y = coord.y + move.position.y
             self.set_block(move.position, move.piece_id, move.player_id)
+            
+    @staticmethod
+    def get_default_pieces():
+        pieces_text = [
+"""
+..O..
+..O..
+..O..
+..O..
+..O..
+""",
+
+"""
+.O..
+.O..
+.O..
+.O..
+""",
+
+"""
+.O.
+.O.
+.O.
+""",
+
+"""
+O.
+O.
+""",
+
+"""
+O
+""",
+
+"""
+O..
+O..
+OOO
+""",
+
+"""
+.O..
+.O..
+.O..
+.OO.
+""",
+
+"""
+.O.
+.O.
+.OO
+""",
+
+"""
+O.
+OO
+""",
+
+"""
+OO
+OO
+""",
+
+"""
+.O.
+.OO
+.O.
+""",
+
+"""
+.O..
+.OO.
+.O..
+.O..
+""",
+
+"""
+..O.
+.OO.
+.O..
+.O..
+""",
+
+"""
+..O
+OOO
+O..
+""",
+
+"""
+.O
+OO
+O.
+""",
+
+"""
+OO.
+.OO
+.O.
+""",
+
+"""
+.O.
+OOO
+.O.
+""",
+
+"""
+O..
+OO.
+.OO
+""",
+
+"""
+.O.
+.O.
+OOO
+""",
+
+"""
+O.O
+OOO
+...
+""",
+
+"""
+.O.
+OO.
+OO.
+"""]
+        pieces = []
+        for i in range(len(pieces_text)):
+            pieces.append(Piece.from_string(i, pieces_text[i]))
+        return pieces
