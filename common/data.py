@@ -84,6 +84,13 @@ class Piece(object):
         return Piece(id, max(max_x, max_y), coords)
 
     @staticmethod
+    def from_repr(s):
+        s = s.strip()
+        piece_id, piece = s.split('\n', 1)
+        piece_id = int(piece_id[3:])
+        return self.from_string(piece_id, piece)
+
+    @staticmethod
     def default_pieces():
         pieces_text = [
 """
