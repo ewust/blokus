@@ -192,8 +192,8 @@ class Board(object):
         return Block(block_data[0], block_data[1])
     
     def set_block(self, position, piece_id, player_id):
-        assert position.x < size and position.y < size
-        self._data[x][y] = pack(Board._block_format, move.piece_id, move.player_id)
+        assert position.x < self.size and position.y < self.size
+        self._data[position.x][position.y] = pack(Board._block_format, piece_id, player_id)
     
     def get_piece(self, piece_id):
         assert piece_id < len(self.pieces)
@@ -211,20 +211,20 @@ class Board(object):
     
     def get_remaining_piece_ids(self, player_id):
         piece_ids = set([piece.piece_id for piece in self.pieces])
-        return piece_ids - get_used_pieces(player_id)
+        return piece_ids - self.get_used_piece_ids(player_id)
 
     def is_valid_piece(self, piece):
         if piece.piece_id >= len(self.pieces):
             return False
         
-        actual = self.pieces[piece_id]
+        actual = self.pieces[piece.piece_id]
         return actual.is_rotation(piece)
         
     def is_valid_move(self, move):
         if not self.is_valid_piece(move.piece):
             return False
         
-        if not move.piece.piece_id in self.get_remaining_pieces(move.player_id):
+        if not move.piece.piece_id in self.get_remaining_piece_ids(move.player_id):
             return False
         
         for coord in move.piece.coords:
@@ -258,7 +258,7 @@ class Board(object):
         for coord in move.piece.coords:
             x = coord.x + move.position.x
             y = coord.y + move.position.y
-            self.set_block(move.position, move.piece_id, move.player_id)
+            self.set_block(move.position, move.piece.piece_id, move.player_id)
             
     @staticmethod
     def get_default_pieces():
