@@ -20,8 +20,9 @@ class BlockusEncoder(json.JSONEncoder):
 
 class Message():
     TYPE_CONTROL = 1
-    TYPE_BOARD = 2
-    TYPE_MOVE = 3
+    TYPE_ID = 2
+    TYPE_BOARD = 3
+    TYPE_MOVE = 4
 
     @staticmethod
     def serialized(sock, message_type, message_object):
@@ -29,6 +30,30 @@ class Message():
         l = struct.pack(">I", len(msg))
         sock.send(l)
         sock.send(msg)
+
+    def printer(self, rep):
+        s = ""
+        if self.message_type is Message.TYPE_CONTROL:
+            s += "CONTROL: "
+            s += str(self.message_object)
+        elif self.message_type is Message.TYPE_BOARD:
+            s += "\nBOARD: "
+            s += "\tsize: " + str(self.message_object[0])
+            s += "\tplayer_count: " + str(self.message_object[1])
+            s += "\tnum_pieces: " + str(self.message_object[2])
+            if (rep):
+                for p in self.message_object[3:]:
+                    s += str(p)
+        elif self.message_type is Message.TYPE_MOVE:
+            s += "MOVE: "
+            s += str(self.message_object)
+        return s
+
+    def __str__(self):
+        return self.printer(False)
+
+    def __repr__(self):
+        return self.printer(True)
 
     """Takes a socket and blocks until it has read exactly enough
     bytes to parse out one message"""

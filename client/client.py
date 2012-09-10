@@ -4,7 +4,7 @@ import sys
 import ConfigParser
 
 from comm import ServerConnection
-from bots.dummybot import DummyBot as Bot
+from bots.dummybot import DummyBot as MyBot
 
 class Client():
     def __init__(self, conf=None):
@@ -16,8 +16,8 @@ class Client():
 
     def go(self):
         while True:
-            board = self.server.join_game()
-            self.bot = Bot(board=board)
+            player_id, board = self.server.join_game()
+            self.bot = MyBot(player_id=player_id, board=board)
             while (self.server.game_loop(self.bot)):
                 pass
 

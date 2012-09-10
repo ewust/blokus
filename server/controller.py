@@ -23,6 +23,7 @@ class BasicGame(Game):
     def __init__(self, port=None):
         self.arrival_sem = threading.Semaphore(0)
         self.go_sem = []
+        self.socks = [0,0,0,0]
         for i in xrange(4):
             self.go_sem.append(threading.Semaphore(0))
 
@@ -30,16 +31,18 @@ class BasicGame(Game):
 
     def player(self, player_id):
         l = threading.local()
-        l.go_sem = self.go_sem[player_id]
+        l.others = None
 
         with self.lock:
             l.sock, l.user = self.server.get_connection()
+            self.socks[player_id] = l.sock
 
         m = Message(l.sock)
         if not m.match(Message.TYPE_CONTROL, "JOIN"):
             raise
         print "Got JOIN from " + l.user
 
+        Message.serialized(l.sock, Message.TYPE_ID, player_id)
         Message.serialized(l.sock, Message.TYPE_BOARD, self.board)
 
         Message.serialized(l.sock, Message.TYPE_CONTROL, "WAIT")
@@ -47,7 +50,18 @@ class BasicGame(Game):
         self.arrival_sem.release()
 
         while True:
-            l.go_sem.acquire()
+            self.go_sem[player_id].acquire()
+            Message.serialized(l.sock, Message.TYPE_CONTROL, "TURN")
+            m = Message(l.sock, Message.TYPE_MOVE)
+
+            if l.others is None:
+                l.others = list(self.socks)
+                l.others.pop(player_id)
+
+            for s in l.others:
+                Message.serialized(s, Message.TYPE_MOVE, m.message_object)
+
+            self.go_sem[player_id+1 % 4].release()
 
     def play_game(self):
         players = [0,1,2,3]
