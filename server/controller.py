@@ -65,6 +65,8 @@ class BasicGame(Game):
                 Message.serialized(l.sock, Message.TYPE_STATUS,\
                         [Bot.STATUS_SKIPPED, "Illegal Move"])
                 self.done = True
+                for s in self.go_sem:
+                    s.release()
 
             self.board.apply_move(move)
 
