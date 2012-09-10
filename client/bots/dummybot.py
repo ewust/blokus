@@ -13,9 +13,8 @@ class DummyBot(Bot):
         self.board = board
         self.player_id = player_id
         self.remaining_pieces = copy(board.pieces)
-    
-    """Must return a Move object"""
-    def get_move(self):
+
+    def calc_move(self):
         for piece in self.remaining_pieces:
             for rotation in [piece.get_rotation(i) for i in range(4)]:
                 for x in xrange(self.board.size):
@@ -23,12 +22,24 @@ class DummyBot(Bot):
                         move = Move(Point(x, y), rotation, self.player_id)
                         if self.board.is_valid_move(move):
                             return move
-    
+        raise NotImplementedError, "No more moves"
+
+    """Must return a Move object"""
+    def get_move(self):
+        move = self.calc_move()
+        assert self.board.is_valid_move(move)
+        self.board.apply_move(move)
+        return move
+
     """Reports a move made by another player to this bot"""
     def report_move(self, move):
         self.board.apply_move(move)
-    
+
     """Reports a status message from the server to this bot
        (e.g. 'You took too long! Your turn has been skipped.')"""
     def report_status(self, status_code, message):
-        pass
+        if status_code is self.STATUS_SKIPPED:
+            print "My turn was skipped: " + message
+        else:
+            raise NotImplementedError, "Unknown status: " +\
+                    str(status_code) + ": " + message

@@ -19,7 +19,8 @@ class BlockusEncoder(json.JSONEncoder):
         return json.JSONEncoder.default(self, obj)
 
 class Message():
-    TYPE_CONTROL = 1
+    TYPE_CONTROL = 0
+    TYPE_STATUS = 1
     TYPE_ID = 2
     TYPE_BOARD = 3
     TYPE_MOVE = 4
@@ -36,6 +37,9 @@ class Message():
         if self.message_type is Message.TYPE_CONTROL:
             s += "CONTROL: "
             s += str(self.message_object)
+        elif self.message_type is Message.TYPE_STATUS:
+            s += "STATUS: "
+            s += str(self.message_object)
         elif self.message_type is Message.TYPE_BOARD:
             s += "\nBOARD: "
             s += "\tsize: " + str(self.message_object[0])
@@ -47,6 +51,10 @@ class Message():
         elif self.message_type is Message.TYPE_MOVE:
             s += "MOVE: "
             s += str(self.message_object)
+        else:
+            s += "\n\nUNKNOWN? [This is an error]\n"
+            s += "Type: " + str(self.message_type)
+            s += "Object: " + str(self.message_object)
         return s
 
     def __str__(self):
