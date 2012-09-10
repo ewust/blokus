@@ -88,7 +88,7 @@ class Piece(object):
         s = s.strip()
         piece_id, piece = s.split('\n', 1)
         piece_id = int(piece_id[3:])
-        return self.from_string(piece_id, piece)
+        return Piece.from_string(piece_id, piece)
 
     @staticmethod
     def default_pieces():
