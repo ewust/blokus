@@ -177,7 +177,7 @@ class Board(object):
             self.pieces = Board.get_default_pieces()
         
         # Initialize piece IDs so we can use list index as piece ID
-        for i in range(len(pieces)):
+        for i in range(len(self.pieces)):
             self.pieces[i].piece_id = i
         
         self.size = size
