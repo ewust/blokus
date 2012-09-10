@@ -34,8 +34,8 @@ class Piece(object):
     size = the length of the longest axis of the piece
     coords = a list of coordinates that this piece occupies
     """
-    def __init__(self, id, size, coords):
-        self.id = id
+    def __init__(self, piece_id, size, coords):
+        self.piece_id = piece_id
         self.coords = coords
         self.size = size
         half_size = math.floor(size / 2)
@@ -59,7 +59,7 @@ class Piece(object):
     the height of the Piece.
     """
     @staticmethod
-    def from_string(id, s):
+    def from_string(piece_id, s):
         s = s.strip()
         max_x = 0
         max_y = s.count("\n")
@@ -81,7 +81,7 @@ class Piece(object):
                 coords.append(Point(x, y))
                 x += 1
         
-        return Piece(id, max(max_x, max_y), coords)
+        return Piece(piece_id, max(max_x, max_y), coords)
 
     @staticmethod
     def from_repr(s):
@@ -131,10 +131,10 @@ OOO
         
         grid_string = "".join(["".join(line) for line in grid])
         
-        return "".join(["id=", str(self.id), "\n", grid_string])
+        return "".join(["id=", str(self.piece_id), "\n", grid_string])
     
     def equals(self, piece):
-        if self.id != piece.id:
+        if self.piece_id != piece.piece_id:
             return False
             
         for coord in piece.coords:
