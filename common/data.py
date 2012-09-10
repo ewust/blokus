@@ -81,7 +81,7 @@ class Piece(object):
                 coords.append(Point(x, y))
                 x += 1
         
-        return Piece(piece_id, max(max_x, max_y), coords)
+        return Piece(piece_id, max(max_x, max_y + 1), coords)
 
     @staticmethod
     def from_repr(s):
@@ -89,35 +89,6 @@ class Piece(object):
         piece_id, piece = s.split('\n', 1)
         piece_id = int(piece_id[3:])
         return Piece.from_string(piece_id, piece)
-
-    @staticmethod
-    def default_pieces():
-        pieces_text = [
-"""
-.O.
-.OO
-OO.
-""",
-"""
-.O.
-.O.
-OO.
-""",
-"""
-OO.
-.O.
-OO.
-""",
-"""
-.O.
-.O.
-OOO
-""",
-]
-        pieces = []
-        for i in range(len(pieces_text)):
-            pieces.append(Piece.from_string(i, pieces_text[i]))
-        return pieces
 
     def __repr__(self):
         def create_line(size):
@@ -203,8 +174,8 @@ class Board(object):
         if (pieces):
             self.pieces = set(pieces)
         else:
-            # Default set of pieces
-            self.pieces = set(Piece.default_pieces())
+            self.pieces = set(Board.get_default_pieces())
+            
         self.size = size
         self.player_count = player_count
         
@@ -237,8 +208,15 @@ class Board(object):
     def get_remaining_pieces(self, player_id):
         return self.pieces - self.get_used_pieces(player_id)
 
+    def is_valid_piece(self, piece):
+        if piece.piece_id >= len(self.pieces):
+            return False
+        
+        actual = self.pieces[piece_id]
+        return actual.is_rotation(piece)
+        
     def is_valid_move(self, move):
-        if move.piece.piece_id >= len(self.pieces):
+        if not self.is_valid_piece(move.piece):
             return False
         
         if not move.piece.piece_id in self.get_remaining_pieces(move.player_id):
@@ -251,11 +229,162 @@ class Board(object):
                 
         return True
     
+    """
+    On the first move, players are only allowed to place pieces that touch
+    corners of the board. This returns whether the specified move is valid as
+    a first move for any given player.  A move is valid if the piece is valid
+    and it touches a corner
+    """
     def is_valid_first_move(self, move):
-        raise NotImplementedError()
+        if not self.is_valid_piece(move.piece):
+            return False
+        
+        max_value = self.size - 1
+        for coord in move.piece.coords:
+            if ((coord.x == 0 and coord.y == 0) or
+                (coord.x == 0 and coord.y == max_value) or
+                (coord.x == max_value and coord.y == max_value) or
+                (coord.x == max_value and coord.y == 0)):
+                return True
+                
+        return False
     
     def apply_move(self, move):
         for coord in move.piece.coords:
             x = coord.x + move.position.x
             y = coord.y + move.position.y
             self.set_block(move.position, move.piece_id, move.player_id)
+            
+    @staticmethod
+    def get_default_pieces():
+        pieces_text = [
+"""
+..O..
+..O..
+..O..
+..O..
+..O..
+""",
+
+"""
+.O..
+.O..
+.O..
+.O..
+""",
+
+"""
+.O.
+.O.
+.O.
+""",
+
+"""
+O.
+O.
+""",
+
+"""
+O
+""",
+
+"""
+O..
+O..
+OOO
+""",
+
+"""
+.O..
+.O..
+.O..
+.OO.
+""",
+
+"""
+.O.
+.O.
+.OO
+""",
+
+"""
+O.
+OO
+""",
+
+"""
+OO
+OO
+""",
+
+"""
+.O.
+.OO
+.O.
+""",
+
+"""
+.O..
+.OO.
+.O..
+.O..
+""",
+
+"""
+..O.
+.OO.
+.O..
+.O..
+""",
+
+"""
+..O
+OOO
+O..
+""",
+
+"""
+.O
+OO
+O.
+""",
+
+"""
+OO.
+.OO
+.O.
+""",
+
+"""
+.O.
+OOO
+.O.
+""",
+
+"""
+O..
+OO.
+.OO
+""",
+
+"""
+.O.
+.O.
+OOO
+""",
+
+"""
+O.O
+OOO
+...
+""",
+
+"""
+.O.
+OO.
+OO.
+"""]
+        pieces = []
+        for i in range(len(pieces_text)):
+            pieces.append(Piece.from_string(i, pieces_text[i]))
+        return pieces
