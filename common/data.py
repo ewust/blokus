@@ -1,11 +1,7 @@
-<<<<<<< HEAD
-﻿# vim: ts=4 et sw=4 sts=4
+# vim: ts=4 et sw=4 sts=4
 
 import math
-=======
-﻿import math
 import string
->>>>>>> 5b25857e14e260bca0ff70595e422a5a3a821c7c
 import unittest
 
 from collections import namedtuple
