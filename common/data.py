@@ -172,10 +172,14 @@ class Board(object):
     
     def __init__(self, pieces=None, size=DEFAULT_BOARD_SIZE, player_count=DEFAULT_PLAYER_COUNT):
         if (pieces):
-            self.pieces = set(pieces)
+            self.pieces = pieces
         else:
-            self.pieces = set(Board.get_default_pieces())
-            
+            self.pieces = Board.get_default_pieces()
+        
+        # Initialize piece IDs so we can use list index as piece ID
+        for i in range(len(pieces)):
+            self.pieces[i].piece_id = i
+        
         self.size = size
         self.player_count = player_count
         
@@ -195,7 +199,7 @@ class Board(object):
         assert piece_id < len(self.pieces)
         return self.pieces[piece_id]
     
-    def get_used_pieces(self, player_id):
+    def get_used_piece_ids(self, player_id):
         used_pieces = set()
         for x in range(self.size):
             for y in range(self.size):
@@ -205,8 +209,9 @@ class Board(object):
                     
         return used_pieces
     
-    def get_remaining_pieces(self, player_id):
-        return self.pieces - get_used_pieces(player_id)
+    def get_remaining_piece_ids(self, player_id):
+        piece_ids = set([piece.piece_id for piece in self.pieces])
+        return piece_ids - get_used_pieces(player_id)
 
     def is_valid_piece(self, piece):
         if piece.piece_id >= len(self.pieces):
@@ -384,7 +389,4 @@ OOO
 OO.
 OO.
 """]
-        pieces = []
-        for i in range(len(pieces_text)):
-            pieces.append(Piece.from_string(i, pieces_text[i]))
-        return pieces
+        return [Piece.from_string(0, text) for text in pieces_text]
