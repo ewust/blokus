@@ -3,6 +3,7 @@
 """Abstract AI Bot class to be overridden by players"""
 class Bot(object):
     STATUS_SKIPPED = 1      # Your turn was skipped, message explains why
+    STATUS_GAME_OVER = 2    # This game has ended
 
     """Initializes the bot for a new game"""
     def init(self, player_id, board):

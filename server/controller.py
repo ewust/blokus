@@ -25,6 +25,7 @@ class BasicGame(Game):
         self.arrival_sem = threading.Semaphore(0)
         self.go_sem = []
         self.socks = [0,0,0,0]
+        self.done = False
         for i in xrange(4):
             self.go_sem.append(threading.Semaphore(0))
 
@@ -52,6 +53,10 @@ class BasicGame(Game):
 
         while True:
             self.go_sem[player_id].acquire()
+
+            if self.done:
+                break
+
             Message.serialized(l.sock, Message.TYPE_CONTROL, "TURN")
             m = Message(l.sock, Message.TYPE_MOVE)
             move = m.message_object
@@ -59,6 +64,9 @@ class BasicGame(Game):
             if not self.board.is_valid_move(move):
                 Message.serialized(l.sock, Message.TYPE_STATUS,\
                         [Bot.STATUS_SKIPPED, "Illegal Move"])
+                self.done = True
+
+            self.board.apply_move(move)
 
             if l.others is None:
                 l.others = list(self.socks)
@@ -68,6 +76,9 @@ class BasicGame(Game):
                 Message.serialized(s, Message.TYPE_MOVE, m.message_object)
 
             self.go_sem[player_id+1 % 4].release()
+
+        Message.serialized(l.sock, Message.TYPE_STATUS,\
+                [Bot.STATUS_GAME_OVER, "This game has ended"])
 
     def play_game(self):
         players = [0,1,2,3]
