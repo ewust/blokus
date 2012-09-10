@@ -90,35 +90,6 @@ class Piece(object):
         piece_id = int(piece_id[3:])
         return Piece.from_string(piece_id, piece)
 
-    @staticmethod
-    def default_pieces():
-        pieces_text = [
-"""
-.O.
-.OO
-OO.
-""",
-"""
-.O.
-.O.
-OO.
-""",
-"""
-OO.
-.O.
-OO.
-""",
-"""
-.O.
-.O.
-OOO
-""",
-]
-        pieces = []
-        for i in range(len(pieces_text)):
-            pieces.append(Piece.from_string(i, pieces_text[i]))
-        return pieces
-
     def __repr__(self):
         def create_line(size):
             line = ["." for i in range(size)]
@@ -203,13 +174,41 @@ class Board(object):
         if (pieces):
             self.pieces = set(pieces)
         else:
-            # Default set of pieces
-            self.pieces = set(Piece.default_pieces())
+            self.pieces = set(Board.get_default_pieces())
+            
         self.size = size
         self.player_count = player_count
         
         null_block = pack(Board._block_format, EMPTY_PIECE_ID, EMPTY_PLAYER_ID)
         self._data = [[null_block] * size for x in range(size)]
+    
+    @staticmethod
+    def get_default_pieces():
+        pieces_text = [
+"""
+.O.
+.OO
+OO.
+""",
+"""
+.O.
+.O.
+OO.
+""",
+"""
+OO.
+.O.
+OO.
+""",
+"""
+.O.
+.O.
+OOO
+"""]
+        pieces = []
+        for i in range(len(pieces_text)):
+            pieces.append(Piece.from_string(i, pieces_text[i]))
+        return pieces
     
     def get_block(self, position):
         assert position.x < size and position.y < size
@@ -242,7 +241,7 @@ class Board(object):
             return False
         
         actual = self.pieces[piece_id]
-        return actual.is_rotation(piece):
+        return actual.is_rotation(piece)
         
     def is_valid_move(self, move):
         if not self.is_valid_piece(move.piece):
