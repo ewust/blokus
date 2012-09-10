@@ -6,7 +6,7 @@ from copy import copy
 """Dumbest bot that can play the game"""
 class DummyBot(Bot):
     """Initializes the bot for a new game"""
-    def init(self, player_id, board):
+    def __init__(self, player_id, board):
         self.board = board
         self.player_id = player_id
         self.remaining_pieces = copy(board.pieces)
