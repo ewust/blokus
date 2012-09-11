@@ -138,11 +138,16 @@ class BlockusBoard:
     def destroy(self, widget, data=None):
         gtk.main_quit()
 
-    def update_turn_label(self):
+    def update_labels(self):
         self.turn_id.set_text("Turn %d / %d" % (
             self.current_move + 1,
             len(self.move_history),
             ))
+        if self.current_move > -1:
+            move = self.move_history[self.current_move]
+            self.status_string.set_text('Last move: ' + str(move))
+        else:
+            self.status_string.set_text('No moves played')
 
     def id_to_color(self, player_id):
         if player_id == 0:
@@ -158,7 +163,7 @@ class BlockusBoard:
 
     def add_move(self, move):
         self.move_history.append(move)
-        self.update_turn_label()
+        self.update_labels()
 
     def goto_move_extreme(self, button, direction):
         try:
@@ -178,11 +183,9 @@ class BlockusBoard:
             self.unplay_move(self.move_history[self.current_move])
             self.current_move -= 1
             increment += 1
-        self.update_turn_label()
+        self.update_labels()
 
     def do_move(self, move, new_block):
-        self.status_string.set_text('Last move: ' + str(move))
-
         if move.is_skip():
             return
 
