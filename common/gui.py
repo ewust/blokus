@@ -4,6 +4,10 @@ import pygtk
 pygtk.require('2.0')
 import gtk
 
+import sys
+
+from common.game_logger import GameParser
+
 __version__ = 0.1
 
 class BlockusBoard:
@@ -25,7 +29,7 @@ class BlockusBoard:
         last = gtk.Button(stock=gtk.STOCK_GOTO_LAST)
         self.menu_line_elements.append(last)
 
-        self.turn_id = gtk.Label("Turn 0 / ?")
+        self.turn_id = gtk.Label("Turn 0 / %d" % (len(self.move_history)))
         self.menu_line_elements.append(self.turn_id)
 
         for e in self.menu_line_elements:
@@ -45,11 +49,11 @@ class BlockusBoard:
             tv_cols.append(gtk.TreeViewColumn(str(c)))
 
         self.blocks = {
-                'empty' : gtk.gdk.pixbuf_new_from_file('resources/block_empty.png'),
-                'red' : gtk.gdk.pixbuf_new_from_file('resources/block_red.png'),
-                'blue' : gtk.gdk.pixbuf_new_from_file('resources/block_blue.png'),
-                'green' : gtk.gdk.pixbuf_new_from_file('resources/block_green.png'),
-                'yellow' : gtk.gdk.pixbuf_new_from_file('resources/block_yellow.png'),
+                'empty' : gtk.gdk.pixbuf_new_from_file('common/resources/block_empty.png'),
+                'red' : gtk.gdk.pixbuf_new_from_file('common/resources/block_red.png'),
+                'blue' : gtk.gdk.pixbuf_new_from_file('common/resources/block_blue.png'),
+                'green' : gtk.gdk.pixbuf_new_from_file('common/resources/block_green.png'),
+                'yellow' : gtk.gdk.pixbuf_new_from_file('common/resources/block_yellow.png'),
                 }
 
         for r in xrange(self.rows):
@@ -85,7 +89,7 @@ class BlockusBoard:
         for e in self.status_line_elements:
             self.status_line.pack_start(e)
 
-    def __init__(self, rows, cols):
+    def build_gui(self, rows, cols):
         self.rows = rows
         self.cols = cols
         self.board = {}
@@ -114,13 +118,27 @@ class BlockusBoard:
 
         self.window.show_all()
 
+    def __init__(self, rows, cols):
+        self.move_history = []
+
+        self.build_gui(rows, cols)
+
     def destroy(self, widget, data=None):
         gtk.main_quit()
+
+    def add_move(self, move):
+        self.move_history.append(move)
+        self.turn_id.set_text("Turn 0 / %d" % (len(self.move_history)))
 
     def main(self):
         gtk.main()
 
 if __name__ == '__main__':
-    b = BlockusBoard(20, 20)
-    #b = BlockusBoard(4, 4)
+    try:
+        game = GameParser(sys.argv[1])
+    except IndexError:
+        raise NotImplementedError, "Game log required, only reply supported"
+    b = BlockusBoard(game.size, game.size)
+    for move in game:
+        b.add_move(move)
     b.main()

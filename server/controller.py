@@ -6,9 +6,9 @@ import threading
 from common.communication import Message
 from common.data import Board
 from common.bot import Bot
+from common.game_logger import GameLogger
 
 from Clear_server import ClearServer as Server
-from game_logger import GameLogger
 
 class Game(object):
     class GameError(Exception):
