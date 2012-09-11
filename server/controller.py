@@ -8,6 +8,7 @@ from common.data import Board
 from common.bot import Bot
 
 from Clear_server import ClearServer as Server
+from game_logger import GameLogger
 
 class Game(object):
     class GameError(Exception):
@@ -36,10 +37,12 @@ class BasicGame(Game):
         self.socks = [0,0,0,0]
         self.skips = [0,0,0,0]
         self.done = False
+
         for i in xrange(4):
             self.go_sem.append(threading.Semaphore(0))
 
         self.board = Board('original')
+        self.game_logger = GameLogger(self.board, display=True)
 
         super(BasicGame, self).__init__()
 
@@ -82,7 +85,7 @@ class BasicGame(Game):
                 self.skips[player_id] = True
 
                 if sum(self.skips) == 4:
-                    print repr(move)
+                    self.game_logger.add_move(move)
                     print "=================="
                     print "4 skips. Game Over"
                     self.done = True
@@ -90,8 +93,7 @@ class BasicGame(Game):
                         s.release()
                     break
 
-            print repr(move)
-            self.board.play_move(move)
+            self.game_logger.add_move(move)
 
             for s in self.socks:
                 Message.serialized(s, Message.TYPE_MOVE, m.message_object)
