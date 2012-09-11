@@ -15,13 +15,54 @@ EMPTY_PLAYER_ID = 0xFF
 DEFAULT_BOARD_SIZE = 20
 DEFAULT_PLAYER_COUNT = 4
 
-Point = namedtuple("Point", ["x", "y"])
 Move = namedtuple("Move", ["position", "piece", "player_id"])
 _Block = namedtuple("Block", ["piece_id", "player_id", "is_empty"])
 
 def Block(piece_id, player_id):
     return _Block(piece_id, player_id, piece_id == EMPTY_PIECE_ID or player_id == EMPTY_PLAYER_ID)
 
+
+class Point(object):
+    def __init__(self, coords):
+        self.x = coords[0]
+        self.y = coords[1]
+
+    def __repr__(self):
+        return "(%d, %d)" % (self.x, self.y)
+
+    def __neg__(self):
+        return Point((-self.x, -self.y))
+
+    def __add__(self, other):
+        return Point((self.x + other[0], self.y + other[1]))
+
+    def __sub__(self, other):
+        return self + -other
+
+    def __eq__(self, other):
+        return (self.x == other[0]) and (self.y == other[1])
+
+    def __ne__(self, other):
+        return not self == other
+
+    def __hash__(self):
+        return hash((self.x, self.y))
+
+    def __getitem__(self, key):
+        if key == 0:
+            return self.x
+        elif key == 1:
+            return self.y
+        else:
+            raise IndexError
+
+    def __setitem__(self, key, v):
+        if key == 0:
+            self.x = v
+        elif key == 1:
+            self.y = v
+        else:
+            raise IndexError
 
 """
 A piece represented as a set of coordinates.  No optimization here, just the
@@ -33,35 +74,21 @@ class Piece(object):
     _sin_table = [0, 1, 0, -1]
 
     """
-    size = the length of the longest axis of the piece
-    coords = a list of coordinates that this piece occupies
-    """
-    def __init__(self, piece_id, size, coords):
-        self.piece_id = piece_id
-        self.coords = coords
-        self.size = size
-        half_size = math.floor(size / 2)
-        if size % 2 == 0:
-            half_size += 1
-        self.center = Point(half_size, half_size)
-        
-        for coord in coords:
-            assert coord.x < size and coord.y < size
-    
-    """
     Constructs a Piece object from an ascii art representation of the desired
     shape. For example:
-        ...O
-        ...O
-        ...O
-        OOOO
-        
-    Dots represent a blank space and non-whitespace characters represent
-    filled blocks.  The '\n' character is used to delimit rows and calculate
-    the height of the Piece.
+        OXXX
+        X..X
+        X...
+        X...
+
+    Dots represent a blank space, 'X' and 'O' characters represent filled
+    blocks.  The '\n' character is used to delimit rows and calculate the height
+    of the Piece.  The special character 'O' represents the 'root' of the piece.
+    A piece is rotated around its root, and built from the root when placed.
     """
-    @staticmethod
-    def from_string(piece_id, s):
+    def coords_from_str(self, s):
+        found_root = False
+
         s = s.strip()
         max_x = 0
         max_y = s.count("\n")
@@ -74,87 +101,102 @@ class Piece(object):
             elif s[i] == "\n":
                 if x > max_x:
                     max_x = x
-            
+
                 x = 0
                 y -= 1
             elif s[i] in string.whitespace:
                 pass
-            else:
-                coords.append(Point(x, y))
+            elif s[i] == 'O':
+                if found_root:
+                    raise TypeError, "Two roots in piece string"
+                found_root = True
+                coords.insert(0, Point((x,y)))
                 x += 1
-        
-        return Piece(piece_id, max(max_x, max_y + 1), coords)
+            else:
+                coords.append(Point((x, y)))
+                x += 1
 
-    @staticmethod
-    def from_repr(s):
-        s = s.strip()
-        piece_id, piece = s.split('\n', 1)
-        piece_id = int(piece_id[3:])
-        return Piece.from_string(piece_id, piece)
+        if not found_root:
+            raise TypeError, "No root in piece string"
+
+        return coords
+
+
+    """
+    Internal - Pieces are stored with the root coordinate at (0,0) so adjust
+    the coordinates if need be. Also compute the piece's shape
+    """
+    def normalize_coords(self):
+        root = self.coords[0]
+        if root != (0,0):
+            for c in xrange(len(self.coords)):
+                self.coords[c] = Point(self.coords[c] - root)
+
+        self.coords = self.coords
+
+        self.min_x = 0
+        self.min_y = 0
+        self.max_x = 0
+        self.max_y = 0
+        for x,y in self.coords:
+            self.min_x = min(x, self.min_x)
+            self.min_y = min(y, self.min_y)
+            self.max_x = max(x, self.max_x)
+            self.max_y = max(y, self.max_y)
+
+        self.shape = (self.max_x - self.min_x + 1, self.max_y - self.min_y + 1)
+
+    """
+    piece_id    - The unique id assigned to this piece from its piece library
+    from_str    - A valid 'piece_str' (see above) to construct this piece from
+    from_coords - The set of coordinates this piece occupies, **root first**
+    """
+    def __init__(self, piece_id, from_str=None, from_coords=None):
+        self.piece_id = piece_id
+
+        if from_str:
+            self.coords = self.coords_from_str(from_str)
+        elif from_coords:
+            self.coords = list(from_coords)
+        else:
+            raise TypeError, "Piece constructor requires a builder (str, coords)"
+        self.normalize_coords()
 
     def __repr__(self):
-        def create_line(size):
-            line = ["." for i in range(size)]
-            line.append("\n")
-            return line
-        
-        grid = [create_line(self.size) for i in range(self.size)]
-        for coord in self.coords:
-            grid[self.size - coord.y - 1][coord.x] = "O"
-        
-        grid_string = "".join(["".join(line) for line in grid])
-        
-        return "".join(["id=", str(self.piece_id), "\n", grid_string])
-    
+        print self.shape
+        print self.coords
+        print self.min_x
+        print self.max_x
+        print self.min_y
+        print self.max_y
+        grid = ""
+        for y in xrange(self.max_y, self.min_y-1, -1):
+            for x in xrange(self.min_x, self.max_x+1):
+                if (x, y) in self.coords:
+                    if (x,y) == self.coords[0]:
+                        grid += 'O'
+                    else:
+                        grid += 'X'
+                else:
+                    grid += '.'
+            grid += '\n'
+
+        return "id=%d,size=%d\n%s" % (self.piece_id, self.shape[1], grid)
+
     def equals(self, piece):
-        if self.piece_id != piece.piece_id:
-            return False
-            
-        for coord in piece.coords:
-            if not coord in self.coords:
-                return False
-                
-        return True
-        
-    """Gets a copy of this piece rotated counter-clockwise by the specified number of steps"""
-    def get_rotation(self, steps):
-        assert steps >= 0
-        
-        rotation = deepcopy(self)
-        
-        steps = steps % 4
-        if steps == 0:
-            return rotation
-        
-        normalized_coords = [ Point(c.x - self.center.x, c.y - self.center.y) for c in self.coords ]
-        
-        cos = Piece._cos_table[steps]
-        sin = Piece._sin_table[steps]
-        rotation.coords = [ 
-            Point(c.x * cos - c.y * sin + self.center.x,
-                  c.x * sin + c.y * cos + self.center.y)
-            for c in normalized_coords]
-        
-        return rotation
-    
-    """Gets the number of steps the given piece was rotated by to arrive at this piece"""
-    def get_rotation_steps(self, piece):
-        rotations = [self.get_rotation(i) for i in range(4)]
-        for i in range(4):
-            if rotations[i].equals(piece):
-                return i
-                
-        raise ValueError("piece is not a valid rotation of this piece")
-        
-    """Determines whether this piece is a valid rotation of the specified piece"""
-    def is_rotation(self, piece):
-        rotations = [self.get_rotation(r) for r in range(4)]
-        
-        for rotation in rotations:
-            if rotation.equals(piece):
-                return True
-                
-        return False
+        return self.piece_id == piece.piece_id
+
+    """Returns the coordinates of this piece rotated counter-clockwise nsteps"""
+    def get_CCW_coords(self, nsteps=1):
+        assert nsteps >= 0
+
+        rcoords = list(self.coords)
+
+        while nsteps:
+            nsteps -= 1
+            rcoords = [Point(-c.y, c.x) for c in rcoords]
+
+        return rcoords
 
 class PieceFactory(object):
     def __init__(self, library):
@@ -199,7 +241,7 @@ class PieceFactory(object):
             for x in xrange(size):
                 pc += l.readline()
 
-            self.pieces[pc_id] = Piece.from_string(pc_id, pc)
+            self.pieces[pc_id] = Piece(pc_id, from_str=pc)
 
     def get(self, pc_id):
         return self.pieces[pc_id]
