@@ -178,7 +178,7 @@ class BlockusBoard:
             increment += 1
         self.update_turn_label()
 
-    def play_move(self, move):
+    def do_move(self, move, new_block):
         self.status_string.set_text('Last move: ' + str(move))
 
         if move.is_skip():
@@ -187,15 +187,18 @@ class BlockusBoard:
         piece = self.piece_factory[move.piece_id]
         coords = piece.get_CCW_coords(move.rotation)
 
-        new_block = self.blocks[self.id_to_color(move.player_id)]
-
         for coord in coords:
-            print "Piece coord " + str(coord)
-            print "   Move pos " + str(move.position)
             coord += move.position
-            print "Playing at " + str(coord)
             treeiter = self.board['liststore'].get_iter((coord.y))
             self.board['liststore'].set_value(treeiter, coord.x, new_block)
+
+    def play_move(self, move):
+        new_block = self.blocks[self.id_to_color(move.player_id)]
+        self.do_move(move, new_block)
+
+    def unplay_move(self, move):
+        new_block = self.blocks['empty']
+        self.do_move(move, new_block)
 
     def main(self):
         gtk.main()
