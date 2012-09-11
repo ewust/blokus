@@ -1,5 +1,6 @@
 # vim: ts=4 et sw=4 sts=4
 
+import os
 import math
 import string
 import unittest
@@ -20,6 +21,7 @@ _Block = namedtuple("Block", ["piece_id", "player_id", "is_empty"])
 
 def Block(piece_id, player_id):
     return _Block(piece_id, player_id, piece_id == EMPTY_PIECE_ID or player_id == EMPTY_PLAYER_ID)
+
 
 """
 A piece represented as a set of coordinates.  No optimization here, just the
@@ -153,6 +155,55 @@ class Piece(object):
                 return True
                 
         return False
+
+class PieceFactory(object):
+    def __init__(self, library):
+        self.library = library
+        self.pieces = {}
+
+        l = None
+        for f in (
+                library,\
+                os.path.join('resources',library),\
+                os.path.join('resources','pieces',library),\
+                ):
+            try:
+                l = open(f, 'r')
+                break
+            except IOError:
+                pass
+        if l is None:
+            raise IOError, "Failed to find piece library"
+
+        while True:
+            meta = l.readline()
+            if meta == '':
+                break
+
+            pc_id = None
+            size = None
+            for field in meta.split(','):
+                name,val = field.split('=')
+                if name == 'id':
+                    pc_id = int(val)
+                elif name == 'size':
+                    size = int(val)
+                else:
+                    # Ignore unknown fields
+                    # logger.debug(...)?
+                    pass
+            if (pc_id is None) or (size is None):
+                continue
+
+            pc = ""
+            for x in xrange(size):
+                pc += l.readline()
+
+            self.pieces[pc_id] = Piece.from_string(pc_id, pc)
+
+    def get(self, pc_id):
+        return self.pieces[pc_id]
+
 
 """
 The full game state.  Note that this is written avoiding any assumptions about
