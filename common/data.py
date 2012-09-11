@@ -4,10 +4,7 @@ import os
 import math
 import string
 import unittest
-
-from collections import namedtuple
-from copy import deepcopy
-from struct import pack, unpack
+import struct
 
 EMPTY_PIECE_ID = 0xFFFF
 EMPTY_PLAYER_ID = 0xFF
@@ -15,12 +12,17 @@ EMPTY_PLAYER_ID = 0xFF
 DEFAULT_BOARD_SIZE = 20
 DEFAULT_PLAYER_COUNT = 4
 
-Move = namedtuple("Move", ["position", "piece", "player_id"])
-_Block = namedtuple("Block", ["piece_id", "player_id", "is_empty"])
+class Move(object):
+    move_id = 0
 
-def Block(piece_id, player_id):
-    return _Block(piece_id, player_id, piece_id == EMPTY_PIECE_ID or player_id == EMPTY_PLAYER_ID)
+    def __init__(self, player_id, piece_id, rotation, position):
+        self.player_id = player_id
+        self.piece_id = piece_id
+        self.rotation = rotation
+        self.position = Point(position)
 
+        self.move_id = Move.move_id
+        Move.move_id += 1
 
 class Point(object):
     def __init__(self, coords):
@@ -243,9 +245,25 @@ class PieceFactory(object):
 
             self.pieces[pc_id] = Piece(pc_id, from_str=pc)
 
-    def get(self, pc_id):
+        self.piece_ids = set(self.pieces.keys())
+
+    def __getitem__(self, pc_id):
         return self.pieces[pc_id]
 
+
+class Block(object):
+    """Network order (big-endian), Piece ID (ushort), Player ID (uchar)"""
+    block_format = "!HB"
+    max_block = 0
+
+    def __init__(self, move=None):
+        self.move = move
+
+        self.block_id = Block.max_block
+        Block.max_block += 1
+
+    def pack(self):
+        return struct.pack(Block.block_format, self.piece_id, self.player_id)
 
 """
 The full game state.  Note that this is written avoiding any assumptions about
@@ -260,73 +278,78 @@ For example, the server might subclass Board and implement caching of
 remaining pieces of each player for efficiency.
 """
 class Board(object):
-    """Network order (big-endian), Piece ID (ushort), Player ID (uchar)"""
-    _block_format = "!HB"
-    
-    def __init__(self, pieces=None, size=DEFAULT_BOARD_SIZE, player_count=DEFAULT_PLAYER_COUNT):
-        if (pieces):
-            self.pieces = pieces
-        else:
-            self.pieces = Board.get_default_pieces()
-        
-        # Initialize piece IDs so we can use list index as piece ID
-        for i in range(len(self.pieces)):
-            self.pieces[i].piece_id = i
-        
+
+    """
+    Base exception class for this object
+    """
+    class BoardError(Exception):
+        pass
+
+    class IllegalMove(BoardError):
+        pass
+
+    def __init__(self, piece_factory, size=DEFAULT_BOARD_SIZE, player_count=DEFAULT_PLAYER_COUNT):
+        self.piece_factory = piece_factory
+
         self.size = size
         self.player_count = player_count
-        
-        null_block = pack(Board._block_format, EMPTY_PIECE_ID, EMPTY_PLAYER_ID)
-        self._data = [[null_block] * size for x in range(size)]
-    
-    def get_block(self, position):
-        assert position.x < self.size and position.y < self.size
-        block_data = unpack(Board._block_format, self._data[position.x][position.y])
-        return Block(block_data[0], block_data[1])
-    
-    def set_block(self, position, piece_id, player_id):
-        assert position.x < self.size and position.y < self.size
-        self._data[position.x][position.y] = pack(Board._block_format, piece_id, player_id)
-    
+
+        self.board = [[Block() for x in xrange(size)] for y in xrange(size)]
+
+    def __getitem__(self, key):
+        key = Point(key)
+        return self.board[key.x][key.y]
+
+    def __setitem__(self, key, val):
+        key = Point(key)
+        if isinstance(Block, val):
+            self.board[key.x][key.y] = val
+        else:
+            raise TypeError, "Block object required"
+
     def get_piece(self, piece_id):
-        assert piece_id < len(self.pieces)
-        return self.pieces[piece_id]
-    
+        return self.piece_factory[piece_id]
+
     def get_used_piece_ids(self, player_id):
         used_pieces = set()
         for x in range(self.size):
             for y in range(self.size):
-                block = self.get_block(Point(x, y))
-                if block.player_id == player_id and not block.piece_id in used_pieces:
+                block = self[Point(x, y)]
+                if block.player_id == player_id:
                     used_pieces.add(block.piece_id)
-                    
-        return used_pieces
-    
-    def get_remaining_piece_ids(self, player_id):
-        piece_ids = set([piece.piece_id for piece in self.pieces])
-        return piece_ids - self.get_used_piece_ids(player_id)
 
-    def is_valid_piece(self, piece):
-        if piece.piece_id >= len(self.pieces):
-            return False
-        
-        actual = self.pieces[piece.piece_id]
-        return actual.is_rotation(piece)
-        
+        return used_pieces
+
+    def get_remaining_piece_ids(self, player_id):
+        return self.piece_factory.piece_ids - self.get_used_piece_ids(player_id)
+
+    def is_valid_piece(self, piece_id):
+        return piece_id in self.piece_factory.piece_ids
+
     def is_valid_move(self, move):
-        if not self.is_valid_piece(move.piece):
+        if not move.piece_id in self.get_remaining_piece_ids(move.player_id):
             return False
-        
-        if not move.piece.piece_id in self.get_remaining_piece_ids(move.player_id):
-            return False
-        
-        for coord in move.piece.coords:
-            block = self.get_block(coord)
-            if not block.is_empty:
+
+        piece = self.piece_factory[move.piece_id]
+        coords = piece.get_CCW_coords(move.rotation)
+
+        for coord in coords:
+            if self[move.position + coord].move:
                 return False
-                
+
         return True
-    
+
+    def play_move(self, move):
+        if not is_valid_move(move):
+            raise IllegalMove
+
+        piece = self.piece_factory[move.piece_id]
+        coords = piece.get_CCW_coords(move.rotation)
+
+        for coord in coords:
+            self[move.position + coord].move = move
+
+
     """
     On the first move, players are only allowed to place pieces that touch
     corners of the board. This returns whether the specified move is valid as
@@ -336,7 +359,7 @@ class Board(object):
     def is_valid_first_move(self, move):
         if not self.is_valid_piece(move.piece):
             return False
-        
+
         max_value = self.size - 1
         for coord in move.piece.coords:
             if ((coord.x == 0 and coord.y == 0) or
@@ -344,15 +367,9 @@ class Board(object):
                 (coord.x == max_value and coord.y == max_value) or
                 (coord.x == max_value and coord.y == 0)):
                 return True
-                
+
         return False
-    
-    def apply_move(self, move):
-        for coord in move.piece.coords:
-            x = coord.x + move.position.x
-            y = coord.y + move.position.y
-            self.set_block(move.position, move.piece.piece_id, move.player_id)
-            
+
     @staticmethod
     def get_default_pieces():
         pieces_text = [
