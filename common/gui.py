@@ -173,6 +173,8 @@ class BlockusBoard:
             self.current_move += 1
             increment -= 1
         while increment < 0:
+            if self.current_move < 0:
+                raise IndexError, "negative indicies out of range"
             self.unplay_move(self.move_history[self.current_move])
             self.current_move -= 1
             increment += 1
