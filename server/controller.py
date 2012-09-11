@@ -34,6 +34,7 @@ class BasicGame(Game):
         self.arrival_sem = threading.Semaphore(0)
         self.go_sem = []
         self.socks = [0,0,0,0]
+        self.skips = [0,0,0,0]
         self.done = False
         for i in xrange(4):
             self.go_sem.append(threading.Semaphore(0))
@@ -69,15 +70,26 @@ class BasicGame(Game):
                 break
 
             Message.serialized(l.sock, Message.TYPE_CONTROL, "TURN")
+
             m = Message(l.sock, Message.TYPE_MOVE)
             move = m.message_object
 
             if not self.board.is_valid_move(move):
                 Message.serialized(l.sock, Message.TYPE_STATUS,\
                         [Bot.STATUS_SKIPPED, "Illegal Move"])
-                self.done = True
-                for s in self.go_sem:
-                    s.release()
+                move = Move.illegal(move.player_id)
+
+            if move.is_skip():
+                self.skips[player_id] = True
+
+                if sum(self.skips) == 4:
+                    print repr(move)
+                    print "=================="
+                    print "4 skips. Game Over"
+                    self.done = True
+                    for s in self.go_sem:
+                        s.release()
+                    break
 
             print repr(move)
             self.board.play_move(move)

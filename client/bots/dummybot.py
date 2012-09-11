@@ -23,13 +23,14 @@ class DummyBot(Bot):
                         if self.board.is_valid_move(move):
                             self.remaining_pieces.remove(piece)
                             return move
-        raise NotImplementedError, "No more moves"
+        return Move.skip(self.player_id)
 
     """Must return a Move object"""
     def get_move(self):
         move = self.calc_move()
-        assert self.board.is_valid_move(move)
-        self.board.play_move(move)
+        if not move.is_skip():
+            assert self.board.is_valid_move(move)
+            self.board.play_move(move)
         return move
 
     """Reports a move made by another player to this bot"""

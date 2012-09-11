@@ -13,9 +13,13 @@ DEFAULT_BOARD_SIZE = 20
 DEFAULT_PLAYER_COUNT = 4
 
 class Move(object):
+    SKIP=-1
+    ILLEGAL=-2
+    TIMEOUT=-3
+
     move_id = 0
 
-    def __init__(self, player_id, piece_id, rotation, position):
+    def __init__(self, player_id, piece_id, rotation=0, position=(0,0)):
         self.player_id = player_id
         self.piece_id = piece_id
         self.rotation = rotation
@@ -24,9 +28,33 @@ class Move(object):
         self.move_id = Move.move_id
         Move.move_id += 1
 
+    @staticmethod
+    def skip(player_id):
+        return Move(player_id, Move.SKIP)
+
+    @staticmethod
+    def illegal(player_id):
+        return Move(player_id, Move.ILLEGAL)
+
+    @staticmethod
+    def timeout(player_id):
+        return Move(player_id, Move.TIMEOUT)
+
+    def is_skip(self):
+        return self.piece_id < 0
+
     def __str__(self):
-        return "Player %d played piece %d rotated %d degrees at %s" %\
-                (self.player_id, self.piece_id, self.rotation*90, str(self.position))
+        if self.piece_id == Move.SKIP:
+            return "Player %d skipped their turn" % (self.player_id)
+        elif self.piece_id == Move.ILLEGAL:
+            return "Player %d made an illegal move and their turn was skipped" %\
+                    (self.player_id)
+        elif self.piece_id == Move.TIMEOUT:
+            return "Player %d timed out and their turn was skipped" %\
+                    (self.player_id)
+        else:
+            return "Player %d played piece %d rotated %d degrees at %s" %\
+                    (self.player_id, self.piece_id, self.rotation*90, str(self.position))
 
     def __repr__(self):
         return "Move #" + str(self.move_id) + ": " + str(self)
@@ -165,6 +193,8 @@ class Piece(object):
     from_coords - The set of coordinates this piece occupies, **root first**
     """
     def __init__(self, piece_id, from_str=None, from_coords=None):
+        if piece_id < 0:
+            raise TypeError, "Piece IDs must be >= 0"
         self.piece_id = piece_id
 
         if from_str:
@@ -347,6 +377,9 @@ class Board(object):
         return piece_id in self.piece_factory.piece_ids
 
     def is_valid_move(self, move):
+        if move.is_skip():
+            return True
+
         if not move.piece_id in self.get_remaining_piece_ids(move.player_id):
             return False
 
@@ -363,6 +396,9 @@ class Board(object):
         return True
 
     def play_move(self, move):
+        if move.is_skip():
+            return
+
         if not self.is_valid_move(move):
             raise IllegalMove
 

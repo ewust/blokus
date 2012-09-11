@@ -80,9 +80,6 @@ class Message():
         msg = sock.recv(i, socket.MSG_WAITALL)
         self.message_type, self.message_object = json.loads(msg)
 
-        if message_type and message_type != self.message_type:
-            raise TypeError, "Bad Message Type"
-
         if self.message_type == Message.TYPE_BOARD:
             library = self.message_object.pop(0)
             pieces = self.message_object.pop(0)
@@ -93,6 +90,9 @@ class Message():
 
         elif self.message_type == Message.TYPE_MOVE:
             self.message_object = Move(*self.message_object)
+
+        if message_type and message_type != self.message_type:
+            raise TypeError, "Bad Message Type"
 
     def match(self, message_type, message_object):
         if self.message_type != message_type:

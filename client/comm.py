@@ -2,6 +2,8 @@
 
 from common.communication import Message
 from common.data import Board,PieceFactory
+# temp, I don't like this much cross-ref..
+from common.bot import Bot
 
 #from SSL_client import SSL_Connection as Connection
 from Clear_client import Clear_Connection as Connection
@@ -45,7 +47,10 @@ class ServerConnection(object):
         elif m.message_type is Message.TYPE_MOVE:
             bot.report_move(m.message_object)
         elif m.message_type is Message.TYPE_STATUS:
-            bot.report_move(*m.message_object)
+            if m.message_object[0] == Bot.STATUS_GAME_OVER:
+                return False
+            else:
+                raise NotImplementedError, "Unknown status message " + str(m)
         else:
             raise NotImplementedError, "Unknown message type " + str(m)
         return True

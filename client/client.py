@@ -14,13 +14,16 @@ class Client():
 
         self.server = ServerConnection()
 
+    def play_game(self):
+        player_id, board = self.server.join_game()
+        self.bot = MyBot(player_id=player_id, board=board)
+        while (self.server.game_loop(self.bot)):
+            pass
+
     def go(self):
         while True:
-            player_id, board = self.server.join_game()
-            self.bot = MyBot(player_id=player_id, board=board)
-            while (self.server.game_loop(self.bot)):
-                pass
+            self.play_game()
 
 if __name__ == '__main__':
     # XXX: Write unit tests?
-    Client().go()
+    Client().play_game()
