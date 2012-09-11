@@ -4,18 +4,26 @@ import socket
 import json
 import struct
 
-from common.data import Board
+from common.data import Board,Move,PieceFactory,Point
 
 class BlockusEncoder(json.JSONEncoder):
     def default(self, obj):
         if isinstance(obj, Board):
             r = []
+            r.append(obj.piece_factory.library)
+            r.append(list(obj.piece_factory.piece_ids))
             r.append(obj.size)
             r.append(obj.player_count)
-            r.append(len(obj.pieces))
-            for p in obj.pieces:
-                r.append(repr(p))
             return r
+        elif isinstance(obj, Move):
+            return [
+                    obj.player_id,
+                    obj.piece_id,
+                    obj.rotation,
+                    obj.position
+                    ]
+        elif isinstance(obj, Point):
+            return [obj.x, obj.y]
         return json.JSONEncoder.default(self, obj)
 
 class Message():
@@ -74,6 +82,17 @@ class Message():
 
         if message_type and message_type != self.message_type:
             raise TypeError, "Bad Message Type"
+
+        if self.message_type == Message.TYPE_BOARD:
+            library = self.message_object.pop(0)
+            pieces = self.message_object.pop(0)
+            size = self.message_object.pop(0)
+            player_count = self.message_object.pop(0)
+            board = Board(PieceFactory(library, pieces), size, player_count)
+            self.message_object = board
+
+        elif self.message_type == Message.TYPE_MOVE:
+            self.message_object = Move(*self.message_object)
 
     def match(self, message_type, message_object):
         if self.message_type != message_type:

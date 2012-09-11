@@ -1,7 +1,7 @@
 # vim: ts=4 et sw=4 sts=4
 
 from common.communication import Message
-from common.data import Board,Piece
+from common.data import Board,PieceFactory
 
 #from SSL_client import SSL_Connection as Connection
 from Clear_client import Clear_Connection as Connection
@@ -24,13 +24,7 @@ class ServerConnection(object):
         player_id = m.message_object
 
         m = Message(self.sock, Message.TYPE_BOARD)
-        size = m.message_object.pop(0)
-        player_count = m.message_object.pop(0)
-        num_pieces = m.message_object.pop(0)
-        pieces = []
-        for p in m.message_object:
-            pieces.append(Piece.from_repr(p))
-        board = Board(size=size, player_count=player_count,pieces=pieces)
+        board = m.message_object
 
         m = Message(self.sock, Message.TYPE_CONTROL)
         if m.message_object != 'WAIT':

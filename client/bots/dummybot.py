@@ -12,15 +12,16 @@ class DummyBot(Bot):
     def __init__(self, player_id, board):
         self.board = board
         self.player_id = player_id
-        self.remaining_pieces = copy(board.pieces)
+        self.remaining_pieces = copy(board.piece_factory.piece_ids)
 
     def calc_move(self):
         for piece in self.remaining_pieces:
-            for rotation in [piece.get_rotation(i) for i in range(4)]:
+            for rotation in xrange(4):
                 for x in xrange(self.board.size):
                     for y in xrange(self.board.size):
-                        move = Move(Point(x, y), rotation, self.player_id)
+                        move = Move(self.player_id, piece, rotation, (x,y))
                         if self.board.is_valid_move(move):
+                            self.remaining_pieces.remove(piece)
                             return move
         raise NotImplementedError, "No more moves"
 
@@ -28,12 +29,12 @@ class DummyBot(Bot):
     def get_move(self):
         move = self.calc_move()
         assert self.board.is_valid_move(move)
-        self.board.apply_move(move)
+        self.board.play_move(move)
         return move
 
     """Reports a move made by another player to this bot"""
     def report_move(self, move):
-        self.board.apply_move(move)
+        self.board.play_move(move)
 
     """Reports a status message from the server to this bot
        (e.g. 'You took too long! Your turn has been skipped.')"""

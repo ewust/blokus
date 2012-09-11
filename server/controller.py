@@ -10,6 +10,12 @@ from common.bot import Bot
 from Clear_server import ClearServer as Server
 
 class Game(object):
+    class GameError(Exception):
+        pass
+
+    class InitializationError(GameError):
+        pass
+
     def __init__(self, port=None):
         if (port):
             self.server = Server(port)
@@ -18,7 +24,10 @@ class Game(object):
 
         self.lock = threading.Lock()
 
-        self.board = Board()
+        try:
+            self.board
+        except NameError:
+            raise InitializationError, "Game subclass must define a board"
 
 class BasicGame(Game):
     def __init__(self, port=None):
@@ -28,6 +37,8 @@ class BasicGame(Game):
         self.done = False
         for i in xrange(4):
             self.go_sem.append(threading.Semaphore(0))
+
+        self.board = Board('original')
 
         super(BasicGame, self).__init__()
 
@@ -68,7 +79,8 @@ class BasicGame(Game):
                 for s in self.go_sem:
                     s.release()
 
-            self.board.apply_move(move)
+            print repr(move)
+            self.board.play_move(move)
 
             if l.others is None:
                 l.others = list(self.socks)
@@ -77,7 +89,7 @@ class BasicGame(Game):
             for s in l.others:
                 Message.serialized(s, Message.TYPE_MOVE, m.message_object)
 
-            self.go_sem[player_id+1 % 4].release()
+            self.go_sem[(player_id+1) % 4].release()
 
         Message.serialized(l.sock, Message.TYPE_STATUS,\
                 [Bot.STATUS_GAME_OVER, "This game has ended"])

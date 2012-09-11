@@ -24,10 +24,21 @@ class Move(object):
         self.move_id = Move.move_id
         Move.move_id += 1
 
+    def __str__(self):
+        return "Player %d played piece %d rotated %d degrees at %s" %\
+                (self.player_id, self.piece_id, self.rotation*90, str(self.position))
+
+    def __repr__(self):
+        return "Move #" + str(self.move_id) + ": " + str(self)
+
 class Point(object):
-    def __init__(self, coords):
-        self.x = coords[0]
-        self.y = coords[1]
+    def __init__(self, coords, coords_as_two_args=None):
+        if coords_as_two_args is not None:
+            self.x = coords
+            self.y = coords_as_two_args
+        else:
+            self.x = coords[0]
+            self.y = coords[1]
 
     def __repr__(self):
         return "(%d, %d)" % (self.x, self.y)
@@ -110,7 +121,7 @@ class Piece(object):
                 pass
             elif s[i] == 'O':
                 if found_root:
-                    raise TypeError, "Two roots in piece string"
+                    raise TypeError, "Two roots in piece string:\n" + s
                 found_root = True
                 coords.insert(0, Point((x,y)))
                 x += 1
@@ -201,7 +212,7 @@ class Piece(object):
         return rcoords
 
 class PieceFactory(object):
-    def __init__(self, library):
+    def __init__(self, library, restrict_piece_ids_to=None):
         self.library = library
         self.pieces = {}
 
@@ -210,6 +221,7 @@ class PieceFactory(object):
                 library,\
                 os.path.join('resources',library),\
                 os.path.join('resources','pieces',library),\
+                os.path.join('common','resources','pieces',library),\
                 ):
             try:
                 l = open(f, 'r')
@@ -242,6 +254,9 @@ class PieceFactory(object):
             pc = ""
             for x in xrange(size):
                 pc += l.readline()
+
+            if restrict_piece_ids_to and pc_id not in restrict_piece_ids_to:
+                continue
 
             self.pieces[pc_id] = Piece(pc_id, from_str=pc)
 
@@ -289,7 +304,12 @@ class Board(object):
         pass
 
     def __init__(self, piece_factory, size=DEFAULT_BOARD_SIZE, player_count=DEFAULT_PLAYER_COUNT):
-        self.piece_factory = piece_factory
+        if isinstance(piece_factory, str):
+            self.piece_factory = PieceFactory(piece_factory)
+        elif isinstance(piece_factory, PieceFactory):
+            self.piece_factory = piece_factory
+        else:
+            raise TypeError, "Bad piece_factory"
 
         self.size = size
         self.player_count = player_count
@@ -302,7 +322,7 @@ class Board(object):
 
     def __setitem__(self, key, val):
         key = Point(key)
-        if isinstance(Block, val):
+        if isinstance(val, Block):
             self.board[key.x][key.y] = val
         else:
             raise TypeError, "Block object required"
@@ -314,9 +334,9 @@ class Board(object):
         used_pieces = set()
         for x in range(self.size):
             for y in range(self.size):
-                block = self[Point(x, y)]
-                if block.player_id == player_id:
-                    used_pieces.add(block.piece_id)
+                block = self[(x, y)]
+                if block.move and block.move.player_id == player_id:
+                    used_pieces.add(block.move.piece_id)
 
         return used_pieces
 
@@ -334,13 +354,16 @@ class Board(object):
         coords = piece.get_CCW_coords(move.rotation)
 
         for coord in coords:
-            if self[move.position + coord].move:
+            try:
+                if self[move.position + coord].move:
+                    return False
+            except IndexError:
                 return False
 
         return True
 
     def play_move(self, move):
-        if not is_valid_move(move):
+        if not self.is_valid_move(move):
             raise IllegalMove
 
         piece = self.piece_factory[move.piece_id]
