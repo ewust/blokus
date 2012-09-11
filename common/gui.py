@@ -1,5 +1,9 @@
 # vim: ts=4 et sw=4 sts=4
 
+# TTTA: Can a gui board subclass from a regular board, perhaps replacing the
+# underlying Block class to allow for re-drawing? Things are starting to
+# duplicate a lot
+
 import pygtk
 pygtk.require('2.0')
 import gtk
@@ -18,15 +22,19 @@ class BlockusBoard:
         self.menu_line_elements.append(title_string)
 
         first = gtk.Button(stock=gtk.STOCK_GOTO_FIRST)
+        first.connect('clicked', self.goto_move_extreme, -1)
         self.menu_line_elements.append(first)
 
         back = gtk.Button(stock=gtk.STOCK_GO_BACK)
+        back.connect('clicked', self.goto_move_relative, -1)
         self.menu_line_elements.append(back)
 
         forward = gtk.Button(stock=gtk.STOCK_GO_FORWARD)
+        forward.connect('clicked', self.goto_move_relative, 1)
         self.menu_line_elements.append(forward)
 
         last = gtk.Button(stock=gtk.STOCK_GOTO_LAST)
+        last.connect('clicked', self.goto_move_extreme, 1)
         self.menu_line_elements.append(last)
 
         self.turn_id = gtk.Label("Turn 0 / %d" % (len(self.move_history)))
@@ -36,9 +44,6 @@ class BlockusBoard:
             self.menu_line.pack_start(e)
 
     def build_board(self):
-        def sq(size):
-            return gtk.gdk.Rectangle(width=size, height=size)
-
         fmt = []
         for c in xrange(self.cols):
             fmt.append(gtk.gdk.Pixbuf)
@@ -80,6 +85,9 @@ class BlockusBoard:
         treeview.get_selection().set_mode(gtk.SELECTION_NONE)
         self.board['container'].pack_start(treeview)
 
+        self.board['liststore'] = liststore
+        self.board['treeview'] = treeview
+
     def build_status_line(self):
         self.status_line_elements = []
 
@@ -118,17 +126,76 @@ class BlockusBoard:
 
         self.window.show_all()
 
-    def __init__(self, rows, cols):
+    def __init__(self, rows, cols, piece_factory):
+        self.piece_factory = piece_factory
+        self.shape = (rows, cols)
+
         self.move_history = []
+        self.current_move = -1
 
         self.build_gui(rows, cols)
 
     def destroy(self, widget, data=None):
         gtk.main_quit()
 
+    def update_turn_label(self):
+        self.turn_id.set_text("Turn %d / %d" % (
+            self.current_move + 1,
+            len(self.move_history),
+            ))
+
+    def id_to_color(self, player_id):
+        if player_id == 0:
+            return 'red'
+        elif player_id == 1:
+            return 'blue'
+        elif player_id == 2:
+            return 'yellow'
+        elif player_id == 3:
+            return 'green'
+        else:
+            raise IndexError
+
     def add_move(self, move):
         self.move_history.append(move)
-        self.turn_id.set_text("Turn 0 / %d" % (len(self.move_history)))
+        self.update_turn_label()
+
+    def goto_move_extreme(self, button, direction):
+        try:
+            while True:
+                self.goto_move_relative(None, direction)
+        except IndexError:
+            pass
+
+    def goto_move_relative(self, button, increment):
+        while increment > 0:
+            self.play_move(self.move_history[self.current_move+1])
+            self.current_move += 1
+            increment -= 1
+        while increment < 0:
+            self.unplay_move(self.move_history[self.current_move])
+            self.current_move -= 1
+            increment += 1
+        self.update_turn_label()
+
+    def play_move(self, move):
+        self.status_string.set_text('Last move: ' + str(move))
+
+        if move.is_skip():
+            return
+
+        piece = self.piece_factory[move.piece_id]
+        coords = piece.get_CCW_coords(move.rotation)
+
+        new_block = self.blocks[self.id_to_color(move.player_id)]
+
+        for coord in coords:
+            print "Piece coord " + str(coord)
+            print "   Move pos " + str(move.position)
+            coord += move.position
+            print "Playing at " + str(coord)
+            treeiter = self.board['liststore'].get_iter((coord.y))
+            self.board['liststore'].set_value(treeiter, coord.x, new_block)
 
     def main(self):
         gtk.main()
@@ -138,7 +205,7 @@ if __name__ == '__main__':
         game = GameParser(sys.argv[1])
     except IndexError:
         raise NotImplementedError, "Game log required, only reply supported"
-    b = BlockusBoard(game.size, game.size)
+    b = BlockusBoard(game.size, game.size, game.piece_factory)
     for move in game:
         b.add_move(move)
     b.main()

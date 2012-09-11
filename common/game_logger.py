@@ -63,4 +63,4 @@ class GameParser(object):
             player_id, piece_id, rotation, x, y = self.l.readline().strip().split(',')
         except ValueError:
             raise StopIteration
-        return Move(player_id, piece_id, rotation, (x,y))
+        return Move(int(player_id), int(piece_id), int(rotation), (int(x),int(y)))
