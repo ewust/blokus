@@ -14,7 +14,8 @@ class DummyBot(Bot):
         self.player_id = player_id
         self.remaining_pieces = copy(board.piece_factory.piece_ids)
 
-    def calc_move(self):
+    """Must return a Move object"""
+    def get_move(self):
         for piece in self.remaining_pieces:
             for rotation in xrange(4):
                 for x in xrange(self.board.size):
@@ -25,15 +26,7 @@ class DummyBot(Bot):
                             return move
         return Move.skip(self.player_id)
 
-    """Must return a Move object"""
-    def get_move(self):
-        move = self.calc_move()
-        if not move.is_skip():
-            assert self.board.is_valid_move(move)
-            self.board.play_move(move)
-        return move
-
-    """Reports a move made by another player to this bot"""
+    """Reports every move made to this bot"""
     def report_move(self, move):
         self.board.play_move(move)
 

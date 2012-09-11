@@ -45,7 +45,6 @@ class BasicGame(Game):
 
     def player(self, player_id):
         l = threading.local()
-        l.others = None
 
         with self.lock:
             l.sock, l.user = self.server.get_connection()
@@ -94,11 +93,7 @@ class BasicGame(Game):
             print repr(move)
             self.board.play_move(move)
 
-            if l.others is None:
-                l.others = list(self.socks)
-                l.others.pop(player_id)
-
-            for s in l.others:
+            for s in self.socks:
                 Message.serialized(s, Message.TYPE_MOVE, m.message_object)
 
             self.go_sem[(player_id+1) % 4].release()

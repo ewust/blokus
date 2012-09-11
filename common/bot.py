@@ -13,7 +13,7 @@ class Bot(object):
     def get_move(self):
         raise NotImplementedError()
     
-    """Reports a move made by another player to this bot"""
+    """Reports every move made to this bot"""
     def report_move(self, move):
         raise NotImplementedError()
     
