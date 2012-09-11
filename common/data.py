@@ -346,12 +346,18 @@ class Board(object):
 
         self.board = [[Block() for x in xrange(size)] for y in xrange(size)]
 
+    def valid_key(self, key):
+        if key.x not in xrange(self.size) or key.y not in xrange(self.size):
+            raise IndexError
+
     def __getitem__(self, key):
         key = Point(key)
+        self.valid_key(key)
         return self.board[key.x][key.y]
 
     def __setitem__(self, key, val):
         key = Point(key)
+        self.valid_key(key)
         if isinstance(val, Block):
             self.board[key.x][key.y] = val
         else:
