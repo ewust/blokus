@@ -151,11 +151,11 @@ class BlockusBoard:
 
     def id_to_color(self, player_id):
         if player_id == 0:
-            return 'red'
-        elif player_id == 1:
             return 'blue'
-        elif player_id == 2:
+        elif player_id == 1:
             return 'yellow'
+        elif player_id == 2:
+            return 'red'
         elif player_id == 3:
             return 'green'
         else:
