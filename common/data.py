@@ -382,7 +382,7 @@ class Board(object):
     def is_valid_piece(self, piece_id):
         return piece_id in self.piece_factory.piece_ids
 
-    def is_valid_move(self, move):
+    def is_valid_move(self, move, first_move=False):
         if move.is_skip():
             return True
 
@@ -392,6 +392,9 @@ class Board(object):
         piece = self.piece_factory[move.piece_id]
         coords = piece.get_CCW_coords(move.rotation)
 
+        # Flag set if we're touching ourselves, pre-set for first move
+        corner_touch = first_move
+
         for coord in coords:
             try:
                 if self[move.position + coord].move:
@@ -399,14 +402,29 @@ class Board(object):
             except IndexError:
                 return False
 
-        return True
+            # Check for edge touches of this block [illegal]
+            for neigh in ((-1, 0), (1, 0), (0, -1), (0, 1)):
+                try:
+                    if self[move.position + coord + neigh].move.player_id == move.player_id:
+                        return False
+                except (IndexError, AttributeError):
+                    pass
+
+            if not corner_touch:
+                # Check for a corner touch [required]
+                for neigh in ((-1, -1), (-1, 1), (1, 1), (1, -1)):
+                    try:
+                        if self[move.position + coord + neigh].move.player_id == move.player_id:
+                            corner_touch = True
+                            break
+                    except (IndexError, AttributeError):
+                        pass
+
+        return corner_touch
 
     def play_move(self, move):
         if move.is_skip():
             return
-
-        if not self.is_valid_move(move):
-            raise self.IllegalMove
 
         piece = self.piece_factory[move.piece_id]
         coords = piece.get_CCW_coords(move.rotation)
@@ -425,7 +443,7 @@ class Board(object):
         if not self.is_valid_piece(move.piece_id):
             return False
 
-        if not self.is_valid_move(move):
+        if not self.is_valid_move(move, True):
             return False
 
         max_value = self.size - 1

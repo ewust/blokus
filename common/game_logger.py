@@ -31,6 +31,8 @@ class GameLogger(object):
             move.position.y,
             ))
 
+        self.o.flush()
+
 class GameParser(object):
     def __init__(self, logfile):
         self.l = open(logfile)

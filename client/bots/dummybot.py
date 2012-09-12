@@ -15,9 +15,13 @@ class DummyBot(Bot):
         self.remaining_pieces = copy(board.piece_factory.piece_ids)
 
         self.first_move = True
+        self.have_skipped = False
 
     """Must return a Move object"""
     def get_move(self):
+        if self.have_skipped:
+            return Move.skip(self.player_id)
+
         valid_func = self.board.is_valid_first_move if self.first_move else\
                 self.board.is_valid_move
 
@@ -30,6 +34,8 @@ class DummyBot(Bot):
                             self.first_move = False
                             self.remaining_pieces.remove(piece)
                             return move
+
+        self.have_skipped = True
         return Move.skip(self.player_id)
 
     """Reports every move made to this bot"""
