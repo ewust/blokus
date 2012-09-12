@@ -406,7 +406,7 @@ class Board(object):
             return
 
         if not self.is_valid_move(move):
-            raise IllegalMove
+            raise self.IllegalMove
 
         piece = self.piece_factory[move.piece_id]
         coords = piece.get_CCW_coords(move.rotation)
@@ -422,11 +422,15 @@ class Board(object):
     and it touches a corner
     """
     def is_valid_first_move(self, move):
-        if not self.is_valid_piece(move.piece):
+        if not self.is_valid_piece(move.piece_id):
+            return False
+
+        if not self.is_valid_move(move):
             return False
 
         max_value = self.size - 1
-        for coord in move.piece.coords:
+        for coord in self.piece_factory[move.piece_id].get_CCW_coords(move.rotation):
+            coord += move.position
             if ((coord.x == 0 and coord.y == 0) or
                 (coord.x == 0 and coord.y == max_value) or
                 (coord.x == max_value and coord.y == max_value) or

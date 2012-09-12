@@ -4,7 +4,7 @@ import random
 import threading
 
 from common.communication import Message
-from common.data import Board
+from common.data import Board,Move
 from common.bot import Bot
 from common.game_logger import GameLogger
 
@@ -28,7 +28,7 @@ class Game(object):
         try:
             self.board
         except NameError:
-            raise InitializationError, "Game subclass must define a board"
+            raise self.InitializationError, "Game subclass must define a board"
 
 class BasicGame(Game):
     def __init__(self, port=None):
@@ -48,6 +48,7 @@ class BasicGame(Game):
 
     def player(self, player_id):
         l = threading.local()
+        l.is_first_move = True
 
         with self.lock:
             l.sock, l.user = self.server.get_connection()
@@ -76,10 +77,15 @@ class BasicGame(Game):
             m = Message(l.sock, Message.TYPE_MOVE)
             move = m.message_object
 
-            if not self.board.is_valid_move(move):
+            valid_func = self.board.is_valid_first_move if l.is_first_move else\
+                    self.board.is_valid_move
+
+            if not valid_func(move):
                 Message.serialized(l.sock, Message.TYPE_STATUS,\
                         [Bot.STATUS_SKIPPED, "Illegal Move"])
                 move = Move.illegal(move.player_id)
+            else:
+                l.is_first_move = False
 
             if move.is_skip():
                 self.skips[player_id] = True
@@ -96,7 +102,7 @@ class BasicGame(Game):
             self.game_logger.add_move(move)
 
             for s in self.socks:
-                Message.serialized(s, Message.TYPE_MOVE, m.message_object)
+                Message.serialized(s, Message.TYPE_MOVE, move)
 
             self.go_sem[(player_id+1) % 4].release()
 
