@@ -4,16 +4,15 @@ from copy import copy
 
 from common.data import Move
 from common.data import Point
-from common.bot import Bot
+from common.bot import SimpleStatusHandler,CornerLoggingBot
 
 """Dumbest bot that can play the game"""
-class DummyBot(Bot):
+class DummyBot(SimpleStatusHandler, CornerLoggingBot):
     """Initializes the bot for a new game"""
-    def __init__(self, player_id, board):
-        self.board = board
-        self.player_id = player_id
-        self.remaining_pieces = copy(board.piece_factory.piece_ids)
+    def __init__(self, **kwds):
+        super(DummyBot, self).__init__(**kwds)
 
+        self.remaining_pieces = copy(self.board.piece_factory.piece_ids)
         self.have_skipped = False
 
     """Must return a Move object"""
@@ -32,16 +31,3 @@ class DummyBot(Bot):
 
         self.have_skipped = True
         return Move.skip(self.player_id)
-
-    """Reports every move made to this bot"""
-    def report_move(self, move):
-        self.board.play_move(move)
-
-    """Reports a status message from the server to this bot
-       (e.g. 'You took too long! Your turn has been skipped.')"""
-    def report_status(self, status_code, message):
-        if status_code is self.STATUS_SKIPPED:
-            print "My turn was skipped: " + message
-        else:
-            raise NotImplementedError, "Unknown status: " +\
-                    str(status_code) + ": " + message
