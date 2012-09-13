@@ -207,6 +207,8 @@ class Piece(object):
             raise TypeError, "Piece constructor requires a builder (str, coords)"
         self.normalize_coords()
 
+        self.rot = {}
+
     def __repr__(self):
         grid = ""
         for y in xrange(self.min_y, self.max_y+1):
@@ -229,13 +231,19 @@ class Piece(object):
     def get_CCW_coords(self, nsteps=1):
         assert nsteps >= 0
 
-        rcoords = list(self.coords)
+        try:
+            raise KeyError
+            return self.rot[nsteps]
+        except KeyError:
+            rcoords = list(self.coords)
 
-        while nsteps:
-            nsteps -= 1
-            rcoords = [Point(-c.y, c.x) for c in rcoords]
+            n = nsteps
+            while n:
+                n -= 1
+                rcoords = [Point(-c.y, c.x) for c in rcoords]
 
-        return rcoords
+            self.rot[nsteps] = rcoords
+            return rcoords
 
 class PieceFactory(object):
     def __init__(self, library, restrict_piece_ids_to=None):
