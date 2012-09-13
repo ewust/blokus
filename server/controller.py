@@ -72,10 +72,13 @@ class BasicGame(Game):
             if self.done:
                 break
 
-            Message.serialized(l.sock, Message.TYPE_CONTROL, "TURN")
+            if self.skips[player_id]:
+                move = Move.skip(player_id)
+            else:
+                Message.serialized(l.sock, Message.TYPE_CONTROL, "TURN")
 
-            m = Message(l.sock, Message.TYPE_MOVE)
-            move = m.message_object
+                m = Message(l.sock, Message.TYPE_MOVE)
+                move = m.message_object
 
             if not self.board.is_valid_move(move):
                 Message.serialized(l.sock, Message.TYPE_STATUS,\
