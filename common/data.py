@@ -350,6 +350,7 @@ class Board(object):
 
         self.board = [[Block() for x in xrange(size)] for y in xrange(size)]
         self.moves = [list() for x in xrange(player_count)]
+        self.used_pieces = [set() for x in xrange(player_count)]
 
     def valid_key(self, key):
         if key.x not in xrange(self.size) or key.y not in xrange(self.size):
@@ -372,14 +373,7 @@ class Board(object):
         return self.piece_factory[piece_id]
 
     def get_used_piece_ids(self, player_id):
-        used_pieces = set()
-        for x in range(self.size):
-            for y in range(self.size):
-                block = self[(x, y)]
-                if block.move and block.move.player_id == player_id:
-                    used_pieces.add(block.move.piece_id)
-
-        return used_pieces
+        return self.used_pieces[player_id]
 
     def get_remaining_piece_ids(self, player_id):
         return self.piece_factory.piece_ids - self.get_used_piece_ids(player_id)
@@ -440,6 +434,8 @@ class Board(object):
 
         if move.is_skip():
             return
+
+        self.used_pieces[move.player_id].add(move.piece_id)
 
         piece = self.piece_factory[move.piece_id]
         coords = piece.get_CCW_coords(move.rotation)
