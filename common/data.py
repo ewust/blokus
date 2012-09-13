@@ -393,15 +393,14 @@ class Board(object):
         if not move.piece_id in self.get_remaining_piece_ids(move.player_id):
             return False
 
-        piece = self.piece_factory[move.piece_id]
-        coords = piece.get_CCW_coords(move.rotation)
+        coords = self.move_coords(move)
 
         # Flag set if we're touching ourselves, pre-set for first move
         corner_touch = first_move
 
         for coord in coords:
             try:
-                if self[move.position + coord].move:
+                if self[coord].move:
                     return False
             except IndexError:
                 return False
@@ -409,7 +408,7 @@ class Board(object):
             # Check for edge touches of this block [illegal]
             for neigh in ((-1, 0), (1, 0), (0, -1), (0, 1)):
                 try:
-                    if self[move.position + coord + neigh].move.player_id == move.player_id:
+                    if self[coord + neigh].move.player_id == move.player_id:
                         return False
                 except (IndexError, AttributeError):
                     pass
@@ -418,13 +417,19 @@ class Board(object):
                 # Check for a corner touch [required]
                 for neigh in ((-1, -1), (-1, 1), (1, 1), (1, -1)):
                     try:
-                        if self[move.position + coord + neigh].move.player_id == move.player_id:
+                        if self[coord + neigh].move.player_id == move.player_id:
                             corner_touch = True
                             break
                     except (IndexError, AttributeError):
                         pass
 
         return corner_touch
+
+    def move_coords(self, move):
+        piece = self.piece_factory[move.piece_id]
+        rot = piece.get_CCW_coords(move.rotation)
+        coords = [coord + move.position for coord in rot]
+        return coords
 
     def play_move(self, move):
         self.moves[move.player_id].append(move)
