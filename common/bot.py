@@ -1,20 +1,29 @@
 ﻿# vim: ts=4 et sw=4 sts=4
 
+from copy import copy
+from common.data import Move
+
 """Abstract AI Bot class to be overridden by players"""
 class Bot(object):
     STATUS_SKIPPED = 1      # Your turn was skipped, message explains why
     STATUS_GAME_OVER = 2    # This game has ended
 
-    """Initializes the bot for a new game. Subclasses *must* call
-    super(SubclassBot, self).__init__(player_id, board)"""
-    def __init__(self, player_id, board):
+    """Initializes the bot for a new game. Subclasses *must* be of the form
+
+    def __init__(self, [args_to_consume,...], **kwds):
+
+    and *must* **first** call
+
+    super(SubclassBot, self).__init__(**kwds)"""
+    def __init__(self, player_id, board, **kwds):
+        super(Bot, self).__init__(**kwds)
         self.board = board
         self.player_id = player_id
-        super(Bot, self).__init__()
 
     """Must return a Move object"""
     def get_move(self):
-        raise NotImplementedError, "Abstract base class"
+        assert not hasattr(super(Bot), 'get_move')
+        return Move.skip(self.player_id)
 
     """Reports every move made to this bot"""
     def report_move(self, move):
@@ -25,15 +34,17 @@ class Bot(object):
     def report_status(self, status_code, message):
         assert not hasattr(super(Bot), 'report_status')
 
-class SimpleStatusHandler(Bot):
-    def report_status(self, status_code, message):
-        if status_code is self.STATUS_SKIPPED:
-            print "My turn was skipped: " + message
-        else:
-            raise NotImplementedError, "Unknown status: " +\
-                    str(status_code) + ": " + message
+## REPORT_MOVE EXTENDERS ##
 
-        super(SimpleStatusHandler, self).report_status(status_code, message)
+class PieceTracker(Bot):
+    def __init__(self, **kwds):
+        super(PieceTracker, self).__init__(**kwds)
+        self.remaining_pieces = copy(self.board.piece_factory.piece_ids)
+
+    def report_move(self, move):
+        if not move.is_skip() and move.player_id == self.player_id:
+            self.remaining_pieces.remove(move.piece_id)
+        super(PieceTracker, self).report_move(move)
 
 class PlayOnReport(Bot):
     """Bots which define their own report_move *must* call
@@ -42,10 +53,10 @@ class PlayOnReport(Bot):
         self.board.play_move(move)
         super(PlayOnReport, self).report_move(move)
 
-class CornerLoggingBot(PlayOnReport):
+class CornerLogger(PlayOnReport):
     def __init__(self, **kwds):
-        self.corner_set = set()
         super(CornerLoggingBot, self).__init__(**kwds)
+        self.corner_set = set()
 
     """Bots which define their own report_move should call
     super(NewBotClass, self).report_move(move)"""
@@ -68,3 +79,29 @@ class CornerLoggingBot(PlayOnReport):
                     pass
 
         super(CornerLoggingBot, self).report_move(move)
+
+## GET_MOVE EXTENDERS ##
+
+class ExhaustiveSearchBot(PieceTracker,PlayOnReport):
+    def get_move(self):
+        for piece in self.remaining_pieces:
+            for rotation in xrange(4):
+                for x in xrange(self.board.size):
+                    for y in xrange(self.board.size):
+                        move = Move(self.player_id, piece, rotation, (x,y))
+                        if self.board.is_valid_move(move):
+                            return move
+
+        return super(ExhaustiveSearchBot, self).get_move()
+
+## REPORT_STATUS EXTENDERS ##
+
+class SimpleStatusHandler(Bot):
+    def report_status(self, status_code, message):
+        if status_code is self.STATUS_SKIPPED:
+            print "My turn was skipped: " + message
+        else:
+            raise NotImplementedError, "Unknown status: " +\
+                    str(status_code) + ": " + message
+
+        super(SimpleStatusHandler, self).report_status(status_code, message)
