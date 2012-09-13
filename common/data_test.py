@@ -1,100 +1,52 @@
-﻿import unittest
+﻿# vim: ts=4 et sw=4 sts=4
+
+import unittest
 
 from common.data import *
-        
-class BlockTests(unittest.TestCase):
-    def test_create(self):
-        block = Block(0, 0)
-        self.assertEqual(block.piece_id, 0)
-        self.assertEqual(block.player_id, 0)
-        self.assertFalse(block.is_empty)
-    
-    def test_empty(self):
-        block = Block(EMPTY_PIECE_ID, 0)
-        self.assertTrue(block.is_empty)
-        block = Block(0, EMPTY_PLAYER_ID)
-        self.assertTrue(block.is_empty)
-        
+
 class PieceTests(unittest.TestCase):
-    def get_test_rotations(self):
-        pieces_text = [
-"""
-.O.
-OOO
-...
-""",
-"""
-.O.
-OO.
-.O.
-""",
-"""
-...
-OOO
-.O.
-""",
-"""
-.O.
-.OO
-.O.
-""" ]
-        return [Piece.from_string(0, text) for text in pieces_text]
-        
     def test_create_from_string(self):
         text = """
 .O.
-.OO
-OO.
+.XX
+XX.
 """
-        piece = Piece.from_string(0, text)
-        self.assertEqual(str(piece).strip(),
-"""
-id=0
-.O.
-.OO
-OO.
-""".strip())
-    
+        piece = Piece(piece_id=0, from_str=text)
+        self.assertEqual(piece.coords,[(0,0),(0,1),(1,1),(-1,2),(0,2)])
+
+    def test_create_from_normalized_coords(self):
+        coords = [(0,0),(0,1),(1,1),(-1,2),(0,2)]
+        piece = Piece(piece_id=0, from_coords=coords)
+        self.assertEqual(piece.coords, coords)
+
+    def test_create_from_non_normalized_coords(self):
+        coords = [(1,2),(1,1),(2,1),(0,0),(1,0)]
+        norm_coords = [(0,0),(0,1),(1,1),(-1,2),(0,2)]
+        piece = Piece(piece_id=0, from_coords=coords)
+        self.assertEqual(piece.coords, norm_coords)
+
     def test_to_string(self):
-        piece = Piece(0, 3, [Point(0, 0), Point(1, 0), Point(1, 1), Point(1, 2)])
+        piece = Piece(0, from_coords=[(0,0),(0,1),(-1,2),(0,2)])
         self.assertEqual(str(piece).strip(),
 """
-id=0
-.O.
-.O.
-OO.
+id=0,size=3
+.O
+.X
+XX
 """.strip())
 
-    def test_create_from_repr(self):
-        text = """
-.O.
-.O.
-OOO
-"""
-        piece = Piece.from_string(1, text)
-        self.assertTrue(piece.equals(Piece.from_repr(str(piece))))
-    
-    def test_get_rotation(self):
-        rotations = self.get_test_rotations()
-        original = rotations[0]
-        for step in range(4):
-            self.assertTrue(rotations[step].equals(original.get_rotation(step)))
-        
-    def test_get_rotation_steps(self):
-        rotations = self.get_test_rotations()
-        original = rotations[0]
-        for i in range(4):
-            self.assertEqual(original.get_rotation_steps(rotations[i]), i)
-        
-    def test_is_rotation(self):
-        rotations = self.get_test_rotations()
-        original = rotations[0]
-        for rotation in rotations:
-            self.assertTrue(original.is_rotation(rotation))
-            self.assertTrue(rotation.is_rotation(original))  
-        
+    def test_rotation(self):
+        piece = Piece(0, 'OX.\n.X.\n.XX')
+        self.assertEqual(piece.get_CCW_coords(0), [(0,0),(1,0),(1,1),(1,2),(2,2)])
+        self.assertEqual(piece.get_CCW_coords(1), [(0,0),(0,1),(-1,1),(-2,1),(-2,2)])
+        self.assertEqual(piece.get_CCW_coords(2), [(0,0),(-1,0),(-1,-1),(-1,-2),(-2,-2)])
+        self.assertEqual(piece.get_CCW_coords(3), [(0,0),(0,-1),(1,-1),(2,-1),(2,-2)])
+        self.assertEqual(piece.get_CCW_coords(0), [(0,0),(1,0),(1,1),(1,2),(2,2)])
+        self.assertEqual(piece.get_CCW_coords(1), [(0,0),(0,1),(-1,1),(-2,1),(-2,2)])
+        self.assertEqual(piece.get_CCW_coords(2), [(0,0),(-1,0),(-1,-1),(-1,-2),(-2,-2)])
+        self.assertEqual(piece.get_CCW_coords(3), [(0,0),(0,-1),(1,-1),(2,-1),(2,-2)])
+        self.assertEqual(piece.get_CCW_coords(4), [(0,0),(1,0),(1,1),(1,2),(2,2)])
+        self.assertEqual(piece.get_CCW_coords(4), [(0,0),(1,0),(1,1),(1,2),(2,2)])
+
 class BoardTests(unittest.TestCase):
-    def test_block_data(self):
-        pass
-        
-        
+    pass

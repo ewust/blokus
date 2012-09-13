@@ -202,7 +202,7 @@ class Piece(object):
         if from_str:
             self.coords = self.coords_from_str(from_str)
         elif from_coords:
-            self.coords = list(from_coords)
+            self.coords = [Point(c[0],c[1]) for c in from_coords]
         else:
             raise TypeError, "Piece constructor requires a builder (str, coords)"
         self.normalize_coords()
@@ -210,6 +210,9 @@ class Piece(object):
         self.rot = {}
 
     def __repr__(self):
+        return "Piece(piece_id=%d, from_coords=%s)" % (self.piece_id, str(self.coords))
+
+    def __str__(self):
         grid = ""
         for y in xrange(self.min_y, self.max_y+1):
             for x in xrange(self.min_x, self.max_x+1):
@@ -222,7 +225,7 @@ class Piece(object):
                     grid += '.'
             grid += '\n'
 
-        return "%s\nid=%d,size=%d\n%s" % (str(self.coords), self.piece_id, self.shape[1], grid)
+        return "id=%d,size=%d\n%s" % (self.piece_id, self.shape[1], grid)
 
     def equals(self, piece):
         return self.piece_id == piece.piece_id
