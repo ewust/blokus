@@ -14,7 +14,6 @@ class DummyBot(Bot):
         self.player_id = player_id
         self.remaining_pieces = copy(board.piece_factory.piece_ids)
 
-        self.first_move = True
         self.have_skipped = False
 
     """Must return a Move object"""
@@ -22,16 +21,12 @@ class DummyBot(Bot):
         if self.have_skipped:
             return Move.skip(self.player_id)
 
-        valid_func = self.board.is_valid_first_move if self.first_move else\
-                self.board.is_valid_move
-
         for piece in self.remaining_pieces:
             for rotation in xrange(4):
                 for x in xrange(self.board.size):
                     for y in xrange(self.board.size):
                         move = Move(self.player_id, piece, rotation, (x,y))
-                        if valid_func(move):
-                            self.first_move = False
+                        if self.board.is_valid_move(move):
                             self.remaining_pieces.remove(piece)
                             return move
 

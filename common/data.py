@@ -345,6 +345,7 @@ class Board(object):
         self.player_count = player_count
 
         self.board = [[Block() for x in xrange(size)] for y in xrange(size)]
+        self.moves = [list() for x in xrange(player_count)]
 
     def valid_key(self, key):
         if key.x not in xrange(self.size) or key.y not in xrange(self.size):
@@ -383,6 +384,9 @@ class Board(object):
         return piece_id in self.piece_factory.piece_ids
 
     def is_valid_move(self, move, first_move=False):
+        if not first_move and len(self.moves[move.player_id]) == 0:
+            return self.is_valid_first_move(move)
+
         if move.is_skip():
             return True
 
@@ -423,6 +427,8 @@ class Board(object):
         return corner_touch
 
     def play_move(self, move):
+        self.moves[move.player_id].append(move)
+
         if move.is_skip():
             return
 

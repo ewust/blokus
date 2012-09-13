@@ -77,10 +77,7 @@ class BasicGame(Game):
             m = Message(l.sock, Message.TYPE_MOVE)
             move = m.message_object
 
-            valid_func = self.board.is_valid_first_move if l.is_first_move else\
-                    self.board.is_valid_move
-
-            if not valid_func(move):
+            if not self.board.is_valid_move(move):
                 Message.serialized(l.sock, Message.TYPE_STATUS,\
                         [Bot.STATUS_SKIPPED, "Illegal Move"])
                 move = Move.illegal(move.player_id)
