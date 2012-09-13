@@ -50,4 +50,21 @@ class CornerLoggingBot(PlayOnReport):
     """Bots which define their own report_move should call
     super(NewBotClass, self).report_move(move)"""
     def report_move(self, move):
+        if not move.is_skip():
+            if move.player_id == self.player_id:
+                for c in self.board.move_coords(move):
+                    for neigh in ((-1, -1), (-1, 1), (1, 1), (1, -1)):
+                        pot = c + neigh
+                        try:
+                            if self.board[pot].move is None:
+                                self.corner_set.add(pot)
+                        except (IndexError):
+                            pass
+
+            for c in self.board.move_coords(move):
+                try:
+                    self.corner_set.remove(c)
+                except KeyError:
+                    pass
+
         super(CornerLoggingBot, self).report_move(move)
