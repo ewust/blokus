@@ -171,7 +171,9 @@ class Piece(object):
         root = self.coords[0]
         if root != (0,0):
             for c in xrange(len(self.coords)):
-                self.coords[c] = Point(self.coords[c] - root)
+                x = self.coords[c].x - root.x
+                y = root.y - self.coords[c].y
+                self.coords[c] = Point(x,y)
 
         self.coords = self.coords
 
@@ -206,14 +208,8 @@ class Piece(object):
         self.normalize_coords()
 
     def __repr__(self):
-        print self.shape
-        print self.coords
-        print self.min_x
-        print self.max_x
-        print self.min_y
-        print self.max_y
         grid = ""
-        for y in xrange(self.max_y, self.min_y-1, -1):
+        for y in xrange(self.min_y, self.max_y+1):
             for x in xrange(self.min_x, self.max_x+1):
                 if (x, y) in self.coords:
                     if (x,y) == self.coords[0]:
@@ -224,7 +220,7 @@ class Piece(object):
                     grid += '.'
             grid += '\n'
 
-        return "id=%d,size=%d\n%s" % (self.piece_id, self.shape[1], grid)
+        return "%s\nid=%d,size=%d\n%s" % (str(self.coords), self.piece_id, self.shape[1], grid)
 
     def equals(self, piece):
         return self.piece_id == piece.piece_id
