@@ -8,13 +8,9 @@ import pygtk
 pygtk.require('2.0')
 import gtk
 
-import sys
-
-from common.game_logger import GameParser
-
 __version__ = 0.1
 
-class BlockusBoard:
+class BlockusGui:
     def build_menu_line(self):
         self.menu_line_elements = []
 
@@ -105,24 +101,35 @@ class BlockusBoard:
         self.window = gtk.Window(gtk.WINDOW_TOPLEVEL)
         self.window.connect("destroy", self.destroy)
 
-        self.vbox = gtk.VBox()
-        self.window.add(self.vbox)
+        self.hbox = gtk.HBox()
+        self.window.add(self.hbox)
+
+        # Left Pane: The Game
+        self.game_vbox = gtk.VBox()
+        self.hbox.add(self.game_vbox)
 
         self.menu_line = gtk.HBox()
-        self.vbox.pack_start(self.menu_line)
+        self.game_vbox.pack_start(self.menu_line)
         self.build_menu_line()
 
-        self.vbox.pack_start(gtk.HSeparator())
+        self.game_vbox.pack_start(gtk.HSeparator())
 
         self.board['container'] = gtk.VBox()
-        self.vbox.pack_start(self.board['container'])
+        self.game_vbox.pack_start(self.board['container'])
         self.build_board()
 
-        self.vbox.pack_start(gtk.HSeparator())
+        self.game_vbox.pack_start(gtk.HSeparator())
 
         self.status_line = gtk.HBox()
-        self.vbox.pack_start(self.status_line)
+        self.game_vbox.pack_start(self.status_line)
         self.build_status_line()
+
+        # Divider..
+        self.hbox.add(gtk.VSeparator())
+
+        # Right pane: Remaining piece library
+        self.pieces_vbox = gtk.VBox()
+        self.hbox.add(self.pieces_vbox)
 
         self.window.show_all()
 
@@ -207,13 +214,3 @@ class BlockusBoard:
 
     def main(self):
         gtk.main()
-
-if __name__ == '__main__':
-    try:
-        game = GameParser(sys.argv[1])
-    except IndexError:
-        raise NotImplementedError, "Game log required, only reply supported"
-    b = BlockusBoard(game.size, game.size, game.piece_factory)
-    for move in game:
-        b.add_move(move)
-    b.main()
