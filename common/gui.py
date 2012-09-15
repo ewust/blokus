@@ -6,10 +6,62 @@
 
 import gi
 gi.require_version('Gtk', '3.0')
+from gi.repository import GObject
 from gi.repository import Gtk
 from gi.repository import GdkPixbuf
 
+from common.data import Block
+
 __version__ = 0.1
+
+class BlockGui(Block):
+    pixbufs = {
+            'empty' : GdkPixbuf.Pixbuf.new_from_file('common/resources/block_empty.png'),
+            'blue' : GdkPixbuf.Pixbuf.new_from_file('common/resources/block_blue.png'),
+            'yellow' : GdkPixbuf.Pixbuf.new_from_file('common/resources/block_yellow.png'),
+            'red' : GdkPixbuf.Pixbuf.new_from_file('common/resources/block_red.png'),
+            'green' : GdkPixbuf.Pixbuf.new_from_file('common/resources/block_green.png'),
+            }
+
+    def get_pixbuf(self):
+        try:
+            return BlockGui.pixbufs[self.id_to_color(self.move.player_id)]
+        except AttributeError as e:
+            return BlockGui.pixbufs['empty']
+
+    def id_to_color(self, player_id):
+        if player_id == 0:
+            return 'blue'
+        elif player_id == 1:
+            return 'yellow'
+        elif player_id == 2:
+            return 'red'
+        elif player_id == 3:
+            return 'green'
+        else:
+            raise IndexError
+
+class BlockRenderer(Gtk.CellRendererPixbuf):
+    __gproperties__ = {
+            'block' : (GObject.TYPE_PYOBJECT,
+                'block to render',
+                'the block object to be rendered',
+                GObject.PARAM_READWRITE)
+            }
+
+    def __init__(self):
+        GObject.GObject.__init__(self)
+        self.block = None
+
+    def do_set_property(self, prop, value):
+        # What is a GParamBoxed?? (prop is one of those...)
+        if isinstance(value, BlockGui):
+            self.block = value
+            self.set_property('pixbuf', self.block.get_pixbuf())
+        elif isinstance(value, Block):
+            raise TypeError, "BlockGui required, not Block"
+
+GObject.type_register(BlockRenderer)
 
 class BlockusGui:
     def build_menu_line(self):
@@ -41,23 +93,15 @@ class BlockusGui:
             self.menu_line.pack_start(e, True, True, 0)
 
     def build_board(self):
-        self.blocks = {
-                'empty' : GdkPixbuf.Pixbuf.new_from_file('common/resources/block_empty.png'),
-                'red' : GdkPixbuf.Pixbuf.new_from_file('common/resources/block_red.png'),
-                'blue' : GdkPixbuf.Pixbuf.new_from_file('common/resources/block_blue.png'),
-                'green' : GdkPixbuf.Pixbuf.new_from_file('common/resources/block_green.png'),
-                'yellow' : GdkPixbuf.Pixbuf.new_from_file('common/resources/block_yellow.png'),
-                }
-
         fmt = []
         for c in xrange(self.cols):
-            fmt.append(GdkPixbuf.Pixbuf)
+            fmt.append(GObject.TYPE_PYOBJECT)
         liststore = Gtk.ListStore(*fmt)
 
         for r in xrange(self.rows):
             row = []
             for c in xrange(self.cols):
-                row.append(self.blocks['empty'])
+                row.append(BlockGui())
             liststore.append(row)
 
         treeview = Gtk.TreeView(liststore)
@@ -65,9 +109,9 @@ class BlockusGui:
         for col in xrange(self.cols):
             c = Gtk.TreeViewColumn(str(c), )
             treeview.append_column(c)
-            cell = Gtk.CellRendererPixbuf()
+            cell = BlockRenderer()
             c.pack_start(cell, True)
-            c.add_attribute(cell, 'pixbuf', col)
+            c.add_attribute(cell, 'block', col)
 
         treeview.set_headers_clickable(False)
         treeview.set_rules_hint(False)
@@ -156,18 +200,6 @@ class BlockusGui:
         else:
             self.status_string.set_text('No moves played')
 
-    def id_to_color(self, player_id):
-        if player_id == 0:
-            return 'blue'
-        elif player_id == 1:
-            return 'yellow'
-        elif player_id == 2:
-            return 'red'
-        elif player_id == 3:
-            return 'green'
-        else:
-            raise IndexError
-
     def add_move(self, move):
         self.move_history.append(move)
         self.update_labels()
@@ -192,7 +224,7 @@ class BlockusGui:
             increment += 1
         self.update_labels()
 
-    def do_move(self, move, new_block):
+    def do_move(self, move, unplay=False):
         if move.is_skip():
             return
 
@@ -202,15 +234,16 @@ class BlockusGui:
         for coord in coords:
             coord += move.position
             treeiter = self.board['liststore'].get_iter((coord.y))
-            self.board['liststore'].set_value(treeiter, coord.x, new_block)
+            if unplay:
+                self.board['liststore'].set_value(treeiter, coord.x, BlockGui(move=None))
+            else:
+                self.board['liststore'].set_value(treeiter, coord.x, BlockGui(move=move))
 
     def play_move(self, move):
-        new_block = self.blocks[self.id_to_color(move.player_id)]
-        self.do_move(move, new_block)
+        self.do_move(move)
 
     def unplay_move(self, move):
-        new_block = self.blocks['empty']
-        self.do_move(move, new_block)
+        self.do_move(move, True)
 
     def main(self):
         Gtk.main()
