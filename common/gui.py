@@ -4,9 +4,10 @@
 # underlying Block class to allow for re-drawing? Things are starting to
 # duplicate a lot
 
-import pygtk
-pygtk.require('2.0')
-import gtk
+import gi
+gi.require_version('Gtk', '3.0')
+from gi.repository import Gtk
+from gi.repository import GdkPixbuf
 
 __version__ = 0.1
 
@@ -14,48 +15,44 @@ class BlockusGui:
     def build_menu_line(self):
         self.menu_line_elements = []
 
-        title_string = gtk.Label("Blockus Viewer v" + str(__version__))
+        title_string = Gtk.Label(label="Blockus Viewer v" + str(__version__))
         self.menu_line_elements.append(title_string)
 
-        first = gtk.Button(stock=gtk.STOCK_GOTO_FIRST)
+        first = Gtk.Button(stock=Gtk.STOCK_GOTO_FIRST)
         first.connect('clicked', self.goto_move_extreme, -1)
         self.menu_line_elements.append(first)
 
-        back = gtk.Button(stock=gtk.STOCK_GO_BACK)
+        back = Gtk.Button(stock=Gtk.STOCK_GO_BACK)
         back.connect('clicked', self.goto_move_relative, -1)
         self.menu_line_elements.append(back)
 
-        forward = gtk.Button(stock=gtk.STOCK_GO_FORWARD)
+        forward = Gtk.Button(stock=Gtk.STOCK_GO_FORWARD)
         forward.connect('clicked', self.goto_move_relative, 1)
         self.menu_line_elements.append(forward)
 
-        last = gtk.Button(stock=gtk.STOCK_GOTO_LAST)
+        last = Gtk.Button(stock=Gtk.STOCK_GOTO_LAST)
         last.connect('clicked', self.goto_move_extreme, 1)
         self.menu_line_elements.append(last)
 
-        self.turn_id = gtk.Label("Turn 0 / %d" % (len(self.move_history)))
+        self.turn_id = Gtk.Label(label="Turn 0 / %d" % (len(self.move_history)))
         self.menu_line_elements.append(self.turn_id)
 
         for e in self.menu_line_elements:
-            self.menu_line.pack_start(e)
+            self.menu_line.pack_start(e, True, True, 0)
 
     def build_board(self):
+        self.blocks = {
+                'empty' : GdkPixbuf.Pixbuf.new_from_file('common/resources/block_empty.png'),
+                'red' : GdkPixbuf.Pixbuf.new_from_file('common/resources/block_red.png'),
+                'blue' : GdkPixbuf.Pixbuf.new_from_file('common/resources/block_blue.png'),
+                'green' : GdkPixbuf.Pixbuf.new_from_file('common/resources/block_green.png'),
+                'yellow' : GdkPixbuf.Pixbuf.new_from_file('common/resources/block_yellow.png'),
+                }
+
         fmt = []
         for c in xrange(self.cols):
-            fmt.append(gtk.gdk.Pixbuf)
-        liststore = gtk.ListStore(*fmt)
-
-        tv_cols = []
-        for c in xrange(self.cols):
-            tv_cols.append(gtk.TreeViewColumn(str(c)))
-
-        self.blocks = {
-                'empty' : gtk.gdk.pixbuf_new_from_file('common/resources/block_empty.png'),
-                'red' : gtk.gdk.pixbuf_new_from_file('common/resources/block_red.png'),
-                'blue' : gtk.gdk.pixbuf_new_from_file('common/resources/block_blue.png'),
-                'green' : gtk.gdk.pixbuf_new_from_file('common/resources/block_green.png'),
-                'yellow' : gtk.gdk.pixbuf_new_from_file('common/resources/block_yellow.png'),
-                }
+            fmt.append(GdkPixbuf.Pixbuf)
+        liststore = Gtk.ListStore(*fmt)
 
         for r in xrange(self.rows):
             row = []
@@ -63,23 +60,26 @@ class BlockusGui:
                 row.append(self.blocks['empty'])
             liststore.append(row)
 
-        treeview = gtk.TreeView(liststore)
+        treeview = Gtk.TreeView(liststore)
 
-        for c in tv_cols:
+        for col in xrange(self.cols):
+            c = Gtk.TreeViewColumn(str(c), )
             treeview.append_column(c)
-            cell = gtk.CellRendererPixbuf()
-            c.pack_start(cell)
-            c.set_attributes(cell, pixbuf=tv_cols.index(c))
+            cell = Gtk.CellRendererPixbuf()
+            c.pack_start(cell, True)
+            c.add_attribute(cell, 'pixbuf', col)
 
         treeview.set_headers_clickable(False)
         treeview.set_rules_hint(False)
         treeview.set_enable_search(False)
         #treeview.set_fixed_height_mode(True)
         treeview.set_headers_visible(False)
-        treeview.set_grid_lines(gtk.TREE_VIEW_GRID_LINES_NONE)
+        # I can't find the proper resolution to assign this directly?
+        g = treeview.get_grid_lines()
+        treeview.set_grid_lines(g.NONE)
 
-        treeview.get_selection().set_mode(gtk.SELECTION_NONE)
-        self.board['container'].pack_start(treeview)
+        treeview.get_selection().set_mode(Gtk.SelectionMode.NONE)
+        self.board['container'].pack_start(treeview, True, True, 0)
 
         self.board['liststore'] = liststore
         self.board['treeview'] = treeview
@@ -87,48 +87,48 @@ class BlockusGui:
     def build_status_line(self):
         self.status_line_elements = []
 
-        self.status_string = gtk.Label("Waiting for new moves...")
+        self.status_string = Gtk.Label(label="Waiting for new moves...")
         self.status_line_elements.append(self.status_string)
 
         for e in self.status_line_elements:
-            self.status_line.pack_start(e)
+            self.status_line.pack_start(e, True, True, 0)
 
     def build_gui(self, rows, cols):
         self.rows = rows
         self.cols = cols
         self.board = {}
 
-        self.window = gtk.Window(gtk.WINDOW_TOPLEVEL)
+        self.window = Gtk.Window(Gtk.WindowType.TOPLEVEL)
         self.window.connect("destroy", self.destroy)
 
-        self.hbox = gtk.HBox()
+        self.hbox = Gtk.HBox()
         self.window.add(self.hbox)
 
         # Left Pane: The Game
-        self.game_vbox = gtk.VBox()
+        self.game_vbox = Gtk.VBox()
         self.hbox.add(self.game_vbox)
 
-        self.menu_line = gtk.HBox()
-        self.game_vbox.pack_start(self.menu_line)
+        self.menu_line = Gtk.HBox()
+        self.game_vbox.pack_start(self.menu_line, True, True, 0)
         self.build_menu_line()
 
-        self.game_vbox.pack_start(gtk.HSeparator())
+        self.game_vbox.pack_start(Gtk.HSeparator(), True, True, 0)
 
-        self.board['container'] = gtk.VBox()
-        self.game_vbox.pack_start(self.board['container'])
+        self.board['container'] = Gtk.VBox()
+        self.game_vbox.pack_start(self.board['container'], True, True, 0)
         self.build_board()
 
-        self.game_vbox.pack_start(gtk.HSeparator())
+        self.game_vbox.pack_start(Gtk.HSeparator(), True, True, 0)
 
-        self.status_line = gtk.HBox()
-        self.game_vbox.pack_start(self.status_line)
+        self.status_line = Gtk.HBox()
+        self.game_vbox.pack_start(self.status_line, True, True, 0)
         self.build_status_line()
 
         # Divider..
-        self.hbox.add(gtk.VSeparator())
+        self.hbox.add(Gtk.VSeparator())
 
         # Right pane: Remaining piece library
-        self.pieces_vbox = gtk.VBox()
+        self.pieces_vbox = Gtk.VBox()
         self.hbox.add(self.pieces_vbox)
 
         self.window.show_all()
@@ -143,7 +143,7 @@ class BlockusGui:
         self.build_gui(rows, cols)
 
     def destroy(self, widget, data=None):
-        gtk.main_quit()
+        Gtk.main_quit()
 
     def update_labels(self):
         self.turn_id.set_text("Turn %d / %d" % (
@@ -213,4 +213,4 @@ class BlockusGui:
         self.do_move(move, new_block)
 
     def main(self):
-        gtk.main()
+        Gtk.main()
