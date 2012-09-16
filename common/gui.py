@@ -234,10 +234,16 @@ class BlockusGui:
         for coord in coords:
             coord += move.position
             treeiter = self.board['liststore'].get_iter((coord.y))
+            block = self.board['liststore'].get_value(treeiter, coord.x)
             if unplay:
-                self.board['liststore'].set_value(treeiter, coord.x, BlockGui(move=None))
+                block.move = None
             else:
-                self.board['liststore'].set_value(treeiter, coord.x, BlockGui(move=move))
+                block.move = move
+            # Call set_value with same block to force a re-paint, I believe this
+            # ultimately chains down to the 'property-notify-event' signal being
+            # sent to the relevent TreeView widget, but I'm not sure how to
+            # replicate just that part of the functionality
+            self.board['liststore'].set_value(treeiter, coord.x, block)
 
     def play_move(self, move):
         self.do_move(move)
