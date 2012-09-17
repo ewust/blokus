@@ -43,6 +43,9 @@ class Move(object):
     def is_skip(self):
         return self.piece_id < 0
 
+    def is_voluntary_skip(self):
+        return self.piece_id == Move.SKIP
+
     def __str__(self):
         if self.piece_id == Move.SKIP:
             return "Player %d skipped their turn" % (self.player_id)

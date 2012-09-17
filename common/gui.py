@@ -120,6 +120,13 @@ class PieceGui(Piece):
 
         self.treeview = treeview
 
+        piece_box = Gtk.VBox()
+        piece_box.add(Gtk.HSeparator())
+        piece_box.add(Gtk.HSeparator())
+        piece_box.add(self.treeview)
+
+        self.boxed_and_sep_treeview = piece_box
+
     def __init__(self, player_id=None, **kwds):
         super(PieceGui, self).__init__(**kwds)
 
@@ -265,13 +272,7 @@ class BoardGui(Board):
         scrolled_box.set_halign(Gtk.Align.FILL)
         scrolled_box.set_valign(Gtk.Align.FILL)
         for piece in self.piece_trays[player_id]:
-            sep = Gtk.Separator()
-            sep.set_orientation(Gtk.Orientation.HORIZONTAL)
-            scrolled_box.add(sep)
-            sep = Gtk.Separator()
-            sep.set_orientation(Gtk.Orientation.HORIZONTAL)
-            scrolled_box.add(sep)
-            scrolled_box.add(piece.treeview)
+            scrolled_box.add(piece.boxed_and_sep_treeview)
         sep = Gtk.Separator()
         sep.set_orientation(Gtk.Orientation.HORIZONTAL)
         scrolled_box.add(sep)
@@ -285,6 +286,7 @@ class BoardGui(Board):
 
         vbox.add(scrolled)
 
+        self.piece_tray_scrolled_boxes[player_id] = scrolled_box
         self.piece_tray_boxes[player_id] = vbox
 
     def get_top_level_box(self):
@@ -297,6 +299,7 @@ class BoardGui(Board):
         self.current_move = -1
 
         self.build_board_area_box()
+        self.piece_tray_scrolled_boxes = {}
         self.piece_tray_boxes = {}
         for p in xrange(self.player_count):
             self.build_piece_tray_box(p)
@@ -352,9 +355,31 @@ class BoardGui(Board):
             increment += 1
         self.update_labels()
 
+    def piece_tray_activate(self, player_id):
+        pass
+
+    def piece_tray_deactivate(self, player_id):
+        pass
+
+    def piece_tray_add(self, player_id, piece_id):
+        self.piece_tray_scrolled_boxes[player_id].add(self.piece_trays[player_id][piece_id].boxed_and_sep_treeview)
+
+    def piece_tray_remove(self, player_id, piece_id):
+        self.piece_tray_scrolled_boxes[player_id].remove(self.piece_trays[player_id][piece_id].boxed_and_sep_treeview)
+
     def do_move(self, move, unplay=False):
         if move.is_skip():
+            if move.is_voluntary_skip():
+                if unplay:
+                    self.piece_tray_activate(move.player_id)
+                else:
+                    self.piece_tray_deactivate(move.player_id)
             return
+
+        if unplay:
+            self.piece_tray_add(move.player_id, move.piece_id)
+        else:
+            self.piece_tray_remove(move.player_id, move.piece_id)
 
         piece = self.piece_factory[move.piece_id]
         coords = piece.get_CCW_coords(move.rotation)
