@@ -15,7 +15,7 @@ if __name__ == '__main__':
         print "USAGE:"
         print sys.argv[0] + ' game.log'
         sys.exit(1)
-    b = BlockusGui(game.size, game.size, game.piece_factory)
+    b = BlockusGui(game.rows, game.cols, game.piece_factory)
     for move in game:
         b.add_move(move)
     b.main()

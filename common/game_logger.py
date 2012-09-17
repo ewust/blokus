@@ -9,10 +9,11 @@ class GameLogger(object):
         self.display = display
 
         self.o = open('game.log', 'w')
-        self.o.write('#Version=0.1\n')
-        self.o.write('#num_players=%d,size=%d,library=%s\n' % (
+        self.o.write('#Version=0.11\n')
+        self.o.write('#num_players=%d,rows=%d,cols=%d,library=%s\n' % (
             board.player_count,
-            board.size,
+            board.rows,
+            board.cols,
             board.piece_factory.library,
             ))
 
@@ -40,20 +41,44 @@ class GameParser(object):
         txt,num = version.split('=')
         if txt.lower() != 'version':
             raise TypeError, "Unknown log file format. Line: " + version
-        if float(num) != 0.1:
+        if float(num) > 0.11:
             raise TypeError, "Unknown log file format. Version: " + num
 
-        params = self.l.readline().strip().strip('#')
-        for param in params.split(','):
-            name,val = param.split('=')
-            if name.lower() == 'num_players':
-                self.num_players = int(val)
-            elif name.lower() == 'size':
-                self.size = int(val)
-            elif name.lower() == 'library':
-                self.library = val
-            else:
-                print "Warn: Unknown param " + param
+        try:
+            params = self.l.readline().strip().strip('#')
+            for param in params.split(','):
+                name,val = param.split('=')
+                if name.lower() == 'num_players':
+                    self.num_players = int(val)
+                elif name.lower() == 'size':
+                    self.shape = (int(val), int(val))
+                elif name.lower() == 'rows':
+                    self.rows = int(val)
+                elif name.lower() == 'cols':
+                    self.cols = int(val)
+                elif name.lower() == 'library':
+                    self.library = val
+                else:
+                    print "Warn: Unknown param " + param
+        except Exception as e:
+            print params
+            raise e
+
+        try:
+            if self.shape[0] != self.rows:
+                raise TypeError, "Board Size Mismatch"
+            self.rows = self.shape[0]
+        except AttributeError:
+            pass
+
+        try:
+            if self.shape[1] != self.cols:
+                raise TypeError, "Board Size Mismatch"
+            self.cols = self.shape[1]
+        except AttributeError:
+            pass
+
+        self.shape = (self.rows, self.cols)
 
         self.piece_factory = PieceFactory(self.library)
 

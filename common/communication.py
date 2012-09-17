@@ -12,7 +12,7 @@ class BlockusEncoder(json.JSONEncoder):
             r = []
             r.append(obj.piece_factory.library)
             r.append(list(obj.piece_factory.piece_ids))
-            r.append(obj.size)
+            r.append(obj.shape)
             r.append(obj.player_count)
             return r
         elif isinstance(obj, Move):
@@ -83,9 +83,9 @@ class Message():
         if self.message_type == Message.TYPE_BOARD:
             library = self.message_object.pop(0)
             pieces = self.message_object.pop(0)
-            size = self.message_object.pop(0)
+            shape = self.message_object.pop(0)
             player_count = self.message_object.pop(0)
-            board = Board(PieceFactory(library, pieces), size, player_count)
+            board = Board(PieceFactory(library, pieces), shape, player_count)
             self.message_object = board
 
         elif self.message_type == Message.TYPE_MOVE:

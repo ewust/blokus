@@ -9,7 +9,7 @@ import struct
 EMPTY_PIECE_ID = 0xFFFF
 EMPTY_PLAYER_ID = 0xFF
 
-DEFAULT_BOARD_SIZE = 20
+DEFAULT_BOARD_SHAPE = (20,20)
 DEFAULT_PLAYER_COUNT = 4
 
 class Move(object):
@@ -340,7 +340,7 @@ class Board(object):
     class IllegalMove(BoardError):
         pass
 
-    def __init__(self, piece_factory, size=DEFAULT_BOARD_SIZE, player_count=DEFAULT_PLAYER_COUNT):
+    def __init__(self, piece_factory, shape=DEFAULT_BOARD_SHAPE, player_count=DEFAULT_PLAYER_COUNT):
         if isinstance(piece_factory, str):
             self.piece_factory = PieceFactory(piece_factory)
         elif isinstance(piece_factory, PieceFactory):
@@ -348,15 +348,24 @@ class Board(object):
         else:
             raise TypeError, "Bad piece_factory"
 
-        self.size = size
+        self.shape = shape
+        self.rows = shape[0]
+        self.cols = shape[1]
+        self.corners = (
+                Point(0,0),
+                Point(0,self.cols-1),
+                Point(self.rows-1, 0),
+                Point(self.rows-1, self.cols-1),
+                )
+
         self.player_count = player_count
 
-        self.board = [[Block() for x in xrange(size)] for y in xrange(size)]
+        self.board = [[Block() for x in xrange(self.rows)] for y in xrange(self.cols)]
         self.moves = [list() for x in xrange(player_count)]
         self.used_pieces = [set() for x in xrange(player_count)]
 
     def valid_key(self, key):
-        if key.x not in xrange(self.size) or key.y not in xrange(self.size):
+        if key.x not in xrange(self.rows) or key.y not in xrange(self.cols):
             raise IndexError
 
     def __getitem__(self, key):
@@ -460,13 +469,9 @@ class Board(object):
         if not self.is_valid_move(move, True):
             return False
 
-        max_value = self.size - 1
         for coord in self.piece_factory[move.piece_id].get_CCW_coords(move.rotation):
             coord += move.position
-            if ((coord.x == 0 and coord.y == 0) or
-                (coord.x == 0 and coord.y == max_value) or
-                (coord.x == max_value and coord.y == max_value) or
-                (coord.x == max_value and coord.y == 0)):
+            if coord in self.corners:
                 return True
 
         return False
