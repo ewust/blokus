@@ -44,7 +44,7 @@ class BlockGui(Block):
         self.color = color
 
     def get_pixbuf(self):
-        if self.player_id:
+        if self.player_id is not None:
             return BlockGui.pixbufs[BlockGui.id_to_color[self.player_id]]
         if self.color:
             return BlockGui.pixbufs[self.color]
@@ -82,10 +82,10 @@ class PieceGui(Piece):
             fmt.append(GObject.TYPE_PYOBJECT)
         liststore = Gtk.ListStore(*fmt)
 
-        for r in xrange(self.shape[1]):
+        for y in xrange(self.min_y, self.max_y+1):
             row = []
-            for c in xrange(self.shape[0]):
-                if (r,c) in self.coords:
+            for x in xrange(self.min_x, self.max_x+1):
+                if (x,y) in self.coords:
                     row.append(BlockGui(player_id=self.player_id, color='empty'))
                 else:
                     row.append(BlockGui(color='alpha'))
@@ -120,7 +120,11 @@ class PieceGui(Piece):
 
 class PieceFactoryGui(PieceFactory):
     def _build_piece(self, piece_id, from_str):
-        return PieceGui(piece_id=piece_id, from_str=from_str)
+        return PieceGui(player_id=self.player_id, piece_id=piece_id, from_str=from_str)
+
+    def __init__(self, player_id=None, **kwds):
+        self.player_id = player_id
+        super(PieceFactoryGui, self).__init__(**kwds)
 
 class BoardGui(Board):
     def build_menu_line(self):
@@ -229,10 +233,50 @@ class BoardGui(Board):
         self.board_area_box.add(self.pieces_vbox)
 
     def build_piece_factory(self, library):
-        self.piece_factory = PieceFactoryGui(library)
+        self.piece_factory = PieceFactory(library)
+
+        self.piece_trays = {}
+        for p in xrange(self.player_count):
+            self.piece_trays[p] = PieceFactoryGui(player_id=p, library=library)
+
+    def build_piece_tray_box(self, player_id):
+        vbox = Gtk.Grid()
+        vbox.set_row_homogeneous(False)
+        vbox.set_orientation(Gtk.Orientation.VERTICAL)
+
+        vbox.add(Gtk.Label('Player %d Tray' % (player_id)))
+
+        scrolled_box = Gtk.Grid()
+        scrolled_box.set_row_homogeneous(False)
+        scrolled_box.set_orientation(Gtk.Orientation.VERTICAL)
+        scrolled_box.set_hexpand(True)
+        scrolled_box.set_vexpand(True)
+        scrolled_box.set_halign(Gtk.Align.FILL)
+        scrolled_box.set_valign(Gtk.Align.FILL)
+        for piece in self.piece_trays[player_id]:
+            sep = Gtk.Separator()
+            sep.set_orientation(Gtk.Orientation.HORIZONTAL)
+            scrolled_box.add(sep)
+            sep = Gtk.Separator()
+            sep.set_orientation(Gtk.Orientation.HORIZONTAL)
+            scrolled_box.add(sep)
+            scrolled_box.add(piece.treeview)
+        sep = Gtk.Separator()
+        sep.set_orientation(Gtk.Orientation.HORIZONTAL)
+        scrolled_box.add(sep)
+        sep = Gtk.Separator()
+        sep.set_orientation(Gtk.Orientation.HORIZONTAL)
+        scrolled_box.add(sep)
+
+        scrolled = Gtk.ScrolledWindow()
+        scrolled.add_with_viewport(scrolled_box)
+
+        vbox.add(scrolled)
+
+        self.piece_tray_boxes[player_id] = vbox
 
     def get_top_level_box(self):
-        return self.board_area_box
+        return self.board_and_trays_box
 
     def __init__(self, **kwds):
         super(BoardGui, self).__init__(**kwds)
@@ -241,6 +285,14 @@ class BoardGui(Board):
         self.current_move = -1
 
         self.build_board_area_box()
+        self.piece_tray_boxes = {}
+        for p in xrange(self.player_count):
+            self.build_piece_tray_box(p)
+
+        self.board_and_trays_box = Gtk.HBox()
+        self.board_and_trays_box.add(self.board_area_box)
+        for p in xrange(self.player_count):
+            self.board_and_trays_box.add(self.piece_tray_boxes[p])
 
         self.window = Gtk.Window(Gtk.WindowType.TOPLEVEL)
         self.window.connect("destroy", self.destroy)

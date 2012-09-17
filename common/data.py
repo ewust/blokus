@@ -391,6 +391,17 @@ class PieceFactory(object):
     def __getitem__(self, pc_id):
         return self.pieces[pc_id]
 
+    def __iter__(self):
+        self._next = -1
+        return self
+
+    def next(self):
+        self._next += 1
+        try:
+            return self.__getitem__(self._next)
+        except KeyError:
+            raise StopIteration
+
 
 class Block(object):
     """Network order (big-endian), Piece ID (ushort), Player ID (uchar)"""
@@ -436,8 +447,6 @@ class Board(object):
         self.piece_factory = PieceFactory(library)
 
     def __init__(self, library, shape=DEFAULT_BOARD_SHAPE, player_count=DEFAULT_PLAYER_COUNT):
-        self.build_piece_factory(library)
-
         self.shape = shape
         self.rows = shape[0]
         self.cols = shape[1]
@@ -450,6 +459,7 @@ class Board(object):
 
         self.player_count = player_count
 
+        self.build_piece_factory(library)
         self.build_board()
 
         self.moves = [list() for x in xrange(player_count)]
