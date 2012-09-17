@@ -15,7 +15,7 @@ if __name__ == '__main__':
         print "USAGE:"
         print sys.argv[0] + ' game.log'
         sys.exit(1)
-    b = BoardGui(shape=game.shape, piece_factory=game.piece_factory)
+    b = BoardGui(shape=game.shape, library=game.library)
     for move in game:
         b.add_move(move)
     b.main()

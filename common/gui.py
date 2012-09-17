@@ -10,7 +10,7 @@ from gi.repository import GObject
 from gi.repository import Gtk
 from gi.repository import GdkPixbuf
 
-from common.data import Block,Board
+from common.data import Block,Board,Piece,PieceFactory
 
 __version__ = 0.1
 
@@ -63,6 +63,11 @@ class BlockRenderer(Gtk.CellRendererPixbuf):
 
 GObject.type_register(BlockRenderer)
 
+
+class PieceFactoryGui(PieceFactory):
+    def _build_piece(self, piece_id, from_str):
+        return PieceGui(piece_id=piece_id, from_str=from_str)
+
 class BoardGui(Board):
     def build_menu_line(self):
         self.menu_line_elements = []
@@ -109,7 +114,7 @@ class BoardGui(Board):
         treeview = Gtk.TreeView(liststore)
 
         for col in xrange(self.cols):
-            c = Gtk.TreeViewColumn(str(c), )
+            c = Gtk.TreeViewColumn(str(c))
             treeview.append_column(c)
             cell = BlockRenderer()
             c.pack_start(cell, True)

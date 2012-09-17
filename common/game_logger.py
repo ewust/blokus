@@ -80,8 +80,6 @@ class GameParser(object):
 
         self.shape = (self.rows, self.cols)
 
-        self.piece_factory = PieceFactory(self.library)
-
     def __iter__(self):
         return self
 

@@ -335,6 +335,9 @@ class Piece(object):
             return self.corners[nsteps]
 
 class PieceFactory(object):
+    def _build_piece(self, piece_id, from_str):
+        return Piece(piece_id=piece_id, from_str=from_str)
+
     def __init__(self, library, restrict_piece_ids_to=None):
         self.library = library
         self.pieces = {}
@@ -381,7 +384,7 @@ class PieceFactory(object):
             if restrict_piece_ids_to and pc_id not in restrict_piece_ids_to:
                 continue
 
-            self.pieces[pc_id] = Piece(pc_id, from_str=pc)
+            self.pieces[pc_id] = self._build_piece(pc_id, from_str=pc)
 
         self.piece_ids = set(self.pieces.keys())
 
@@ -429,13 +432,11 @@ class Board(object):
     def build_board(self):
         self.board = [[Block() for x in xrange(self.rows)] for y in xrange(self.cols)]
 
-    def __init__(self, piece_factory, shape=DEFAULT_BOARD_SHAPE, player_count=DEFAULT_PLAYER_COUNT):
-        if isinstance(piece_factory, str):
-            self.piece_factory = PieceFactory(piece_factory)
-        elif isinstance(piece_factory, PieceFactory):
-            self.piece_factory = piece_factory
-        else:
-            raise TypeError, "Bad piece_factory"
+    def build_piece_factory(self, library):
+        self.piece_factory = PieceFactory(library)
+
+    def __init__(self, library, shape=DEFAULT_BOARD_SHAPE, player_count=DEFAULT_PLAYER_COUNT):
+        self.build_piece_factory(library)
 
         self.shape = shape
         self.rows = shape[0]
