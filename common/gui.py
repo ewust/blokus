@@ -281,6 +281,7 @@ class BoardGui(Board):
 
         scrolled = Gtk.ScrolledWindow()
         scrolled.add_with_viewport(scrolled_box)
+        scrolled.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
 
         vbox.add(scrolled)
 
@@ -303,7 +304,9 @@ class BoardGui(Board):
         self.board_and_trays_box = Gtk.HBox()
         self.board_and_trays_box.add(self.board_area_box)
         for p in xrange(self.player_count):
+            self.board_and_trays_box.add(Gtk.VSeparator())
             self.board_and_trays_box.add(self.piece_tray_boxes[p])
+        self.board_and_trays_box.add(Gtk.VSeparator())
 
         self.window = Gtk.Window(Gtk.WindowType.TOPLEVEL)
         self.window.connect("destroy", self.destroy)
