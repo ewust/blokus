@@ -141,16 +141,12 @@ class BoardGui(Board):
         for e in self.status_line_elements:
             self.status_line.pack_start(e, True, True, 0)
 
-    def build_gui(self):
-        self.window = Gtk.Window(Gtk.WindowType.TOPLEVEL)
-        self.window.connect("destroy", self.destroy)
-
-        self.hbox = Gtk.HBox()
-        self.window.add(self.hbox)
+    def build_board_area_box(self):
+        self.board_area_box = Gtk.HBox()
 
         # Left Pane: The Game
         self.game_vbox = Gtk.VBox()
-        self.hbox.add(self.game_vbox)
+        self.board_area_box.add(self.game_vbox)
 
         self.menu_line = Gtk.HBox()
         self.game_vbox.pack_start(self.menu_line, True, True, 0)
@@ -167,13 +163,14 @@ class BoardGui(Board):
         self.build_status_line()
 
         # Divider..
-        self.hbox.add(Gtk.VSeparator())
+        self.board_area_box.add(Gtk.VSeparator())
 
         # Right pane: Remaining piece library
         self.pieces_vbox = Gtk.VBox()
-        self.hbox.add(self.pieces_vbox)
+        self.board_area_box.add(self.pieces_vbox)
 
-        self.window.show_all()
+    def get_top_level_box(self):
+        return self.board_area_box
 
     def __init__(self, **kwds):
         super(BoardGui, self).__init__(**kwds)
@@ -181,7 +178,13 @@ class BoardGui(Board):
         self.move_history = []
         self.current_move = -1
 
-        self.build_gui()
+        self.build_board_area_box()
+
+        self.window = Gtk.Window(Gtk.WindowType.TOPLEVEL)
+        self.window.connect("destroy", self.destroy)
+        self.window.add(self.get_top_level_box())
+        self.window.show_all()
+
 
     def destroy(self, widget, data=None):
         Gtk.main_quit()
