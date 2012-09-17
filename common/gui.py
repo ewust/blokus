@@ -10,7 +10,7 @@ from gi.repository import GObject
 from gi.repository import Gtk
 from gi.repository import GdkPixbuf
 
-from common.data import Block
+from common.data import Block,Board
 
 __version__ = 0.1
 
@@ -63,7 +63,7 @@ class BlockRenderer(Gtk.CellRendererPixbuf):
 
 GObject.type_register(BlockRenderer)
 
-class BlockusGui:
+class BoardGui(Board):
     def build_menu_line(self):
         self.menu_line_elements = []
 
@@ -93,6 +93,8 @@ class BlockusGui:
             self.menu_line.pack_start(e, True, True, 0)
 
     def build_board(self):
+        self.board = {}
+
         fmt = []
         for c in xrange(self.cols):
             fmt.append(GObject.TYPE_PYOBJECT)
@@ -123,10 +125,12 @@ class BlockusGui:
         treeview.set_grid_lines(g.NONE)
 
         treeview.get_selection().set_mode(Gtk.SelectionMode.NONE)
-        self.board['container'].pack_start(treeview, True, True, 0)
 
         self.board['liststore'] = liststore
         self.board['treeview'] = treeview
+        self.board['container'] = Gtk.VBox()
+
+        self.board['container'].pack_start(treeview, True, True, 0)
 
     def build_status_line(self):
         self.status_line_elements = []
@@ -137,11 +141,7 @@ class BlockusGui:
         for e in self.status_line_elements:
             self.status_line.pack_start(e, True, True, 0)
 
-    def build_gui(self, rows, cols):
-        self.rows = rows
-        self.cols = cols
-        self.board = {}
-
+    def build_gui(self):
         self.window = Gtk.Window(Gtk.WindowType.TOPLEVEL)
         self.window.connect("destroy", self.destroy)
 
@@ -158,9 +158,7 @@ class BlockusGui:
 
         self.game_vbox.pack_start(Gtk.HSeparator(), True, True, 0)
 
-        self.board['container'] = Gtk.VBox()
         self.game_vbox.pack_start(self.board['container'], True, True, 0)
-        self.build_board()
 
         self.game_vbox.pack_start(Gtk.HSeparator(), True, True, 0)
 
@@ -177,14 +175,13 @@ class BlockusGui:
 
         self.window.show_all()
 
-    def __init__(self, rows, cols, piece_factory):
-        self.piece_factory = piece_factory
-        self.shape = (rows, cols)
+    def __init__(self, **kwds):
+        super(BoardGui, self).__init__(**kwds)
 
         self.move_history = []
         self.current_move = -1
 
-        self.build_gui(rows, cols)
+        self.build_gui()
 
     def destroy(self, widget, data=None):
         Gtk.main_quit()

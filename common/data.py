@@ -340,6 +340,9 @@ class Board(object):
     class IllegalMove(BoardError):
         pass
 
+    def build_board(self):
+        self.board = [[Block() for x in xrange(self.rows)] for y in xrange(self.cols)]
+
     def __init__(self, piece_factory, shape=DEFAULT_BOARD_SHAPE, player_count=DEFAULT_PLAYER_COUNT):
         if isinstance(piece_factory, str):
             self.piece_factory = PieceFactory(piece_factory)
@@ -360,7 +363,8 @@ class Board(object):
 
         self.player_count = player_count
 
-        self.board = [[Block() for x in xrange(self.rows)] for y in xrange(self.cols)]
+        self.build_board()
+
         self.moves = [list() for x in xrange(player_count)]
         self.used_pieces = [set() for x in xrange(player_count)]
 

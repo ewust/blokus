@@ -2,10 +2,10 @@
 
 import sys
 
-from common.gui import BlockusGui
+from common.gui import BoardGui
 from common.game_logger import GameParser
 
-class ReplayGui(BlockusGui):
+class ReplayGui(BoardGui):
     pass
 
 if __name__ == '__main__':
@@ -15,7 +15,7 @@ if __name__ == '__main__':
         print "USAGE:"
         print sys.argv[0] + ' game.log'
         sys.exit(1)
-    b = BlockusGui(game.rows, game.cols, game.piece_factory)
+    b = BoardGui(shape=game.shape, piece_factory=game.piece_factory)
     for move in game:
         b.add_move(move)
     b.main()
