@@ -106,13 +106,15 @@ class Point(object):
             raise IndexError
 
 """
-A piece represented as a set of coordinates.  No optimization here, just the
-most generic representation of a piece that allows for the rules to be changed.
-Make assumptions in your bots if you want a different representation.
+A piece represented as a set of coordinates. Some helpful utility functions
+are included here. Most are memoized.
 """
 class Piece(object):
     _cos_table = [1, 0, -1, 0]
     _sin_table = [0, 1, 0, -1]
+
+    CORNER_COORDS = ((-1, -1), (-1, 1), (1, 1), (1, -1))
+    EDGE_COORDS = ((-1, 0), (1, 0), (0, -1), (0, 1))
 
     """
     Constructs a Piece object from an ascii art representation of the desired
@@ -208,6 +210,8 @@ class Piece(object):
         self.normalize_coords()
 
         self.rot = {}
+        self.edges = {}
+        self.corners = {}
 
     def __repr__(self):
         return "Piece(piece_id=%d, from_coords=%s)" % (self.piece_id, str(self.coords))
@@ -227,15 +231,61 @@ class Piece(object):
 
         return "id=%d,size=%d\n%s" % (self.piece_id, self.shape[1], grid)
 
-    def equals(self, piece):
+    def verbose(self):
+        grid = ""
+        for y in xrange(self.min_y-1, self.max_y+1+1):
+            for x in xrange(self.min_x-1, self.max_x+1+1):
+                if (x, y) in self.coords:
+                    if (x,y) == self.coords[0]:
+                        grid += 'O'
+                    else:
+                        grid += 'X'
+                elif (x, y) in self.get_edges():
+                    grid += 'e'
+                elif (x, y) in self.get_corners():
+                    grid += 'c'
+                else:
+                    grid += '.'
+            grid += '\n'
+
+        return "id=%d,size=%d\n%s" % (self.piece_id, self.shape[1], grid)
+
+
+    def __eq__(self, piece):
         return self.piece_id == piece.piece_id
+
+    def __ne__(self, piece):
+        return self.piece_id != piece.piece_id
+
+    def __hash__(self):
+        return hash(self.piece_id)
+
+    def __len__(self):
+        return len(self.coords)
+
+    def __getitem__(self, key):
+        return self.coords[key]
+
+    def __contains__(self, point):
+        return point in self.coords
+
+    def __iter__(self):
+        print '__iter__'
+        self._next = -1
+        return self
+
+    def next(self):
+        self._next += 1
+        try:
+            return self.coords[self._next]
+        except IndexError:
+            raise StopIteration
 
     """Returns the coordinates of this piece rotated counter-clockwise nsteps"""
     def get_CCW_coords(self, nsteps=1):
         assert nsteps >= 0
 
         try:
-            raise KeyError
             return self.rot[nsteps]
         except KeyError:
             rcoords = list(self.coords)
@@ -247,6 +297,42 @@ class Piece(object):
 
             self.rot[nsteps] = rcoords
             return rcoords
+
+    """Returns the edges of this piece, optionally rotated nsteps CCW"""
+    def get_edges(self, nsteps=0):
+        assert nsteps >= 0
+
+        try:
+            return self.edges[nsteps]
+        except KeyError:
+            edges = set()
+
+            for pt in self.get_CCW_coords(nsteps):
+                for e in Piece.EDGE_COORDS:
+                    t = pt + e
+                    if t not in self.coords:
+                        edges.add(t)
+
+            self.edges[nsteps] = list(edges)
+            return self.edges[nsteps]
+
+    """Returns the corners of this piece, optionally rotated nsteps CCW"""
+    def get_corners(self, nsteps=0):
+        assert nsteps >= 0
+
+        try:
+            return self.corners[nsteps]
+        except KeyError:
+            corners = set()
+
+            for pt in self.get_CCW_coords(nsteps):
+                for c in Piece.CORNER_COORDS:
+                    t = pt + c
+                    if t not in self.coords and t not in self.get_edges(nsteps):
+                        corners.add(t)
+
+            self.corners[nsteps] = list(corners)
+            return self.corners[nsteps]
 
 class PieceFactory(object):
     def __init__(self, library, restrict_piece_ids_to=None):
@@ -420,7 +506,7 @@ class Board(object):
                 return False
 
             # Check for edge touches of this block [illegal]
-            for neigh in ((-1, 0), (1, 0), (0, -1), (0, 1)):
+            for neigh in Piece.EDGE_COORDS:
                 try:
                     if self[coord + neigh].move.player_id == move.player_id:
                         return False
@@ -429,7 +515,7 @@ class Board(object):
 
             if not corner_touch:
                 # Check for a corner touch [required]
-                for neigh in ((-1, -1), (-1, 1), (1, 1), (1, -1)):
+                for neigh in Piece.CORNER_COORDS:
                     try:
                         if self[coord + neigh].move.player_id == move.player_id:
                             corner_touch = True
