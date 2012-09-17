@@ -34,11 +34,11 @@ class BlockGui(Block):
     def __init__(self, color=None, player_id=None, **kwds):
         super(BlockGui, self).__init__(**kwds)
 
-        if player_id:
+        if player_id is not None:
             if player_id not in BlockGui.id_to_color.keys():
                 raise TypeError, "Player ID must be one of: " + str(BlockGui.id_to_color.keys())
         self.player_id = player_id
-        if color:
+        if color is not None:
             if color not in BlockGui.pixbufs.keys():
                 raise TypeError, "Color must be one of: " + str(BlockGui.pixbufs.keys())
         self.color = color
@@ -46,7 +46,7 @@ class BlockGui(Block):
     def get_pixbuf(self):
         if self.player_id is not None:
             return BlockGui.pixbufs[BlockGui.id_to_color[self.player_id]]
-        if self.color:
+        if self.color is not None:
             return BlockGui.pixbufs[self.color]
         try:
             return BlockGui.pixbufs[BlockGui.id_to_color[self.move.player_id]]
@@ -107,6 +107,11 @@ class PieceGui(Piece):
         treeview.set_headers_visible(False)
         g = treeview.get_grid_lines()
         treeview.set_grid_lines(g.NONE)
+
+        treeview.set_hexpand(True)
+        treeview.set_vexpand(True)
+        treeview.set_halign(Gtk.Align.CENTER)
+        treeview.set_valign(Gtk.Align.FILL)
 
         treeview.get_selection().set_mode(Gtk.SelectionMode.NONE)
 
@@ -186,6 +191,9 @@ class BoardGui(Board):
         # I can't find the proper resolution to assign this directly?
         g = treeview.get_grid_lines()
         treeview.set_grid_lines(g.NONE)
+
+        treeview.set_halign(Gtk.Align.CENTER)
+        treeview.set_valign(Gtk.Align.CENTER)
 
         treeview.get_selection().set_mode(Gtk.SelectionMode.NONE)
 
