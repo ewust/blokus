@@ -8,6 +8,7 @@ import gi
 gi.require_version('Gtk', '3.0')
 from gi.repository import GObject
 from gi.repository import Gtk
+from gi.repository import Gdk
 from gi.repository import GdkPixbuf
 
 from common.data import Block,Board,Piece,PieceFactory
@@ -112,6 +113,8 @@ class PieceGui(Piece):
         treeview.set_vexpand(True)
         treeview.set_halign(Gtk.Align.CENTER)
         treeview.set_valign(Gtk.Align.FILL)
+
+        treeview.override_background_color(Gtk.StateFlags.NORMAL, Gdk.RGBA(0,0,0,0))
 
         treeview.get_selection().set_mode(Gtk.SelectionMode.NONE)
 
