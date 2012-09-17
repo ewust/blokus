@@ -1,7 +1,7 @@
 # vim: ts=4 et sw=4 sts=4
 
 from common.communication import Message
-from common.data import Board,PieceFactory
+from common.data import Board,PieceLibrary
 # temp, I don't like this much cross-ref..
 from common.bot import Bot
 

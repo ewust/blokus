@@ -11,7 +11,7 @@ from gi.repository import Gtk
 from gi.repository import Gdk
 from gi.repository import GdkPixbuf
 
-from common.data import Block,Board,Piece,PieceFactory
+from common.data import Block,Board,Piece,PieceLibrary
 
 __version__ = 0.1
 
@@ -128,7 +128,7 @@ class PieceGui(Piece):
 
         self.top_widget = self.treeview
 
-class PieceFactoryGui(PieceFactory):
+class PieceLibraryGui(PieceLibrary):
     def _build_piece(self, piece_id, from_str):
         return PieceGui(player_id=self.player_id, piece_id=piece_id, from_str=from_str)
 
@@ -164,7 +164,7 @@ class PieceFactoryGui(PieceFactory):
 
     def __init__(self, player_id=None, **kwds):
         self.player_id = player_id
-        super(PieceFactoryGui, self).__init__(**kwds)
+        super(PieceLibraryGui, self).__init__(**kwds)
 
         self.build_piece_tray_box()
 
@@ -289,12 +289,16 @@ class BoardGui(Board):
         self.pieces_vbox = Gtk.VBox()
         self.board_area_box.add(self.pieces_vbox)
 
-    def build_piece_factory(self, library):
-        super(BoardGui, self).build_piece_factory(library)
+    def build_piece_library(self, library, piece_ids):
+        super(BoardGui, self).build_piece_library(library, piece_ids)
 
         self.piece_trays = {}
         for p in xrange(self.player_count):
-            self.piece_trays[p] = PieceFactoryGui(player_id=p, library=library)
+            self.piece_trays[p] = PieceLibraryGui(
+                    player_id=p,
+                    library=library,
+                    restrict_piece_ids_to=piece_ids,
+                    )
 
     def __init__(self, **kwds):
         super(BoardGui, self).__init__(**kwds)
@@ -371,7 +375,7 @@ class BoardGui(Board):
         else:
             self.piece_trays[move.player_id].remove_piece(move.piece_id)
 
-        piece = self.piece_factory[move.piece_id]
+        piece = self.piece_library[move.piece_id]
         coords = piece.get_CCW_coords(move.rotation)
 
         for coord in coords:

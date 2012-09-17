@@ -1,6 +1,6 @@
 # vim: ts=4 et sw=4 sts=4
 
-from common.data import PieceFactory,Move
+from common.data import PieceLibrary,Move
 
 class GameLogger(object):
     def __init__(self, board, play=True, display=False, db=None):
@@ -14,7 +14,7 @@ class GameLogger(object):
             board.player_count,
             board.rows,
             board.cols,
-            board.piece_factory.library,
+            board.piece_library.library,
             ))
 
     def add_move(self, move):

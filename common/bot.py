@@ -39,7 +39,7 @@ class Bot(object):
 class PieceTracker(Bot):
     def __init__(self, **kwds):
         super(PieceTracker, self).__init__(**kwds)
-        self.remaining_pieces = copy(self.board.piece_factory.piece_ids)
+        self.remaining_pieces = copy(self.board.piece_library.piece_ids)
 
     def report_move(self, move):
         if not move.is_skip() and move.player_id == self.player_id:

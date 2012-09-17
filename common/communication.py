@@ -4,14 +4,14 @@ import socket
 import json
 import struct
 
-from common.data import Board,Move,PieceFactory,Point
+from common.data import Board,Move,PieceLibrary,Point
 
 class BlockusEncoder(json.JSONEncoder):
     def default(self, obj):
         if isinstance(obj, Board):
             r = []
-            r.append(obj.piece_factory.library)
-            r.append(list(obj.piece_factory.piece_ids))
+            r.append(obj.piece_library.library)
+            r.append(list(obj.piece_library.piece_ids))
             r.append(obj.shape)
             r.append(obj.player_count)
             return r
@@ -82,10 +82,10 @@ class Message():
 
         if self.message_type == Message.TYPE_BOARD:
             library = self.message_object.pop(0)
-            pieces = self.message_object.pop(0)
+            piece_ids = self.message_object.pop(0)
             shape = self.message_object.pop(0)
             player_count = self.message_object.pop(0)
-            board = Board(PieceFactory(library, pieces), shape, player_count)
+            board = Board(library, piece_ids, shape, player_count)
             self.message_object = board
 
         elif self.message_type == Message.TYPE_MOVE:

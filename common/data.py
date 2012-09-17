@@ -337,7 +337,7 @@ class Piece(object):
             self.corners[nsteps] = list(corners)
             return self.corners[nsteps]
 
-class PieceFactory(object):
+class PieceLibrary(object):
     def _build_piece(self, piece_id, from_str):
         return Piece(piece_id=piece_id, from_str=from_str)
 
@@ -446,10 +446,15 @@ class Board(object):
     def build_board(self):
         self.board = [[Block() for x in xrange(self.rows)] for y in xrange(self.cols)]
 
-    def build_piece_factory(self, library):
-        self.piece_factory = PieceFactory(library)
+    def build_piece_library(self, library, piece_ids):
+        self.piece_library = PieceLibrary(library, piece_ids)
 
-    def __init__(self, library, shape=DEFAULT_BOARD_SHAPE, player_count=DEFAULT_PLAYER_COUNT):
+    def __init__(self,
+            library,
+            piece_ids=None,
+            shape=DEFAULT_BOARD_SHAPE,
+            player_count=DEFAULT_PLAYER_COUNT,
+            ):
         self.shape = shape
         self.rows = shape[0]
         self.cols = shape[1]
@@ -462,7 +467,7 @@ class Board(object):
 
         self.player_count = player_count
 
-        self.build_piece_factory(library)
+        self.build_piece_library(library,piece_ids)
         self.build_board()
 
         self.moves = [list() for x in xrange(player_count)]
@@ -486,16 +491,16 @@ class Board(object):
             raise TypeError, "Block object required"
 
     def get_piece(self, piece_id):
-        return self.piece_factory[piece_id]
+        return self.piece_library[piece_id]
 
     def get_used_piece_ids(self, player_id):
         return self.used_pieces[player_id]
 
     def get_remaining_piece_ids(self, player_id):
-        return self.piece_factory.piece_ids - self.get_used_piece_ids(player_id)
+        return self.piece_library.piece_ids - self.get_used_piece_ids(player_id)
 
     def is_valid_piece(self, piece_id):
-        return piece_id in self.piece_factory.piece_ids
+        return piece_id in self.piece_library.piece_ids
 
     def is_valid_move(self, move, first_move=False):
         if not first_move and len(self.moves[move.player_id]) == 0:
@@ -540,7 +545,7 @@ class Board(object):
         return corner_touch
 
     def move_coords(self, move):
-        piece = self.piece_factory[move.piece_id]
+        piece = self.piece_library[move.piece_id]
         rot = piece.get_CCW_coords(move.rotation)
         coords = [coord + move.position for coord in rot]
         return coords
@@ -553,7 +558,7 @@ class Board(object):
 
         self.used_pieces[move.player_id].add(move.piece_id)
 
-        piece = self.piece_factory[move.piece_id]
+        piece = self.piece_library[move.piece_id]
         coords = piece.get_CCW_coords(move.rotation)
 
         for coord in coords:
@@ -573,7 +578,7 @@ class Board(object):
         if not self.is_valid_move(move, True):
             return False
 
-        for coord in self.piece_factory[move.piece_id].get_CCW_coords(move.rotation):
+        for coord in self.piece_library[move.piece_id].get_CCW_coords(move.rotation):
             coord += move.position
             if coord in self.corners:
                 return True
