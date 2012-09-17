@@ -16,6 +16,7 @@ __version__ = 0.1
 
 class BlockGui(Block):
     pixbufs = {
+            'alpha' : GdkPixbuf.Pixbuf.new_from_file('common/resources/block_alpha.png'),
             'empty' : GdkPixbuf.Pixbuf.new_from_file('common/resources/block_empty.png'),
             'blue' : GdkPixbuf.Pixbuf.new_from_file('common/resources/block_blue.png'),
             'yellow' : GdkPixbuf.Pixbuf.new_from_file('common/resources/block_yellow.png'),
@@ -23,23 +24,34 @@ class BlockGui(Block):
             'green' : GdkPixbuf.Pixbuf.new_from_file('common/resources/block_green.png'),
             }
 
-    def get_pixbuf(self):
-        try:
-            return BlockGui.pixbufs[self.id_to_color(self.move.player_id)]
-        except AttributeError as e:
-            return BlockGui.pixbufs['empty']
+    id_to_color = {
+            0 : 'blue',
+            1 : 'yellow',
+            2 : 'red',
+            3 : 'green',
+            }
 
-    def id_to_color(self, player_id):
-        if player_id == 0:
-            return 'blue'
-        elif player_id == 1:
-            return 'yellow'
-        elif player_id == 2:
-            return 'red'
-        elif player_id == 3:
-            return 'green'
-        else:
-            raise IndexError
+    def __init__(self, color=None, player_id=None, **kwds):
+        super(BlockGui, self).__init__(**kwds)
+
+        if player_id:
+            if player_id not in BlockGui.id_to_color.keys():
+                raise TypeError, "Player ID must be one of: " + str(BlockGui.id_to_color.keys())
+        self.player_id = player_id
+        if color:
+            if color not in BlockGui.pixbufs.keys():
+                raise TypeError, "Color must be one of: " + str(BlockGui.pixbufs.keys())
+        self.color = color
+
+    def get_pixbuf(self):
+        if self.player_id:
+            return BlockGui.pixbufs[BlockGui.id_to_color[self.player_id]]
+        if self.color:
+            return BlockGui.pixbufs[self.color]
+        try:
+            return BlockGui.pixbufs[BlockGui.id_to_color[self.move.player_id]]
+        except AttributeError:
+            return BlockGui.pixbufs['empty']
 
 class BlockRenderer(Gtk.CellRendererPixbuf):
     __gproperties__ = {
@@ -63,6 +75,48 @@ class BlockRenderer(Gtk.CellRendererPixbuf):
 
 GObject.type_register(BlockRenderer)
 
+class PieceGui(Piece):
+    def build_treeview(self):
+        fmt = []
+        for c in xrange(self.shape[0]):
+            fmt.append(GObject.TYPE_PYOBJECT)
+        liststore = Gtk.ListStore(*fmt)
+
+        for r in xrange(self.shape[1]):
+            row = []
+            for c in xrange(self.shape[0]):
+                if (r,c) in self.coords:
+                    row.append(BlockGui(player_id=self.player_id, color='empty'))
+                else:
+                    row.append(BlockGui(color='alpha'))
+            liststore.append(row)
+
+        treeview = Gtk.TreeView(liststore)
+
+        for col in xrange(self.shape[0]):
+            c = Gtk.TreeViewColumn(str(c))
+            treeview.append_column(c)
+            cell = BlockRenderer()
+            c.pack_start(cell, True)
+            c.add_attribute(cell, 'block', col)
+
+        treeview.set_headers_clickable(False)
+        treeview.set_rules_hint(False)
+        treeview.set_enable_search(False)
+        #treeview.set_fixed_height_mode(True)
+        treeview.set_headers_visible(False)
+        g = treeview.get_grid_lines()
+        treeview.set_grid_lines(g.NONE)
+
+        treeview.get_selection().set_mode(Gtk.SelectionMode.NONE)
+
+        self.treeview = treeview
+
+    def __init__(self, player_id=None, **kwds):
+        super(PieceGui, self).__init__(**kwds)
+
+        self.player_id = player_id
+        self.build_treeview()
 
 class PieceFactoryGui(PieceFactory):
     def _build_piece(self, piece_id, from_str):
@@ -173,6 +227,9 @@ class BoardGui(Board):
         # Right pane: Remaining piece library
         self.pieces_vbox = Gtk.VBox()
         self.board_area_box.add(self.pieces_vbox)
+
+    def build_piece_factory(self, library):
+        self.piece_factory = PieceFactoryGui(library)
 
     def get_top_level_box(self):
         return self.board_area_box
