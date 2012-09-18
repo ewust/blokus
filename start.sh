@@ -6,8 +6,15 @@ else
 	count=4
 fi
 
+first=true
+
 while [ $count -gt 0 ]; do
-	python client/client.py >& /dev/null &
+	if $first; then
+		python client/client.py &
+		first=false
+	else
+		python client/client.py >& /dev/null &
+	fi
 	let count=count-1
 done
 
