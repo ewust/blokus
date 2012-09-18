@@ -155,14 +155,24 @@ class PieceLibraryGui(PieceLibrary):
         for piece in self:
             scrolled_box.add(piece.top_widget)
 
+        viewport = Gtk.Viewport()
+        viewport.add(scrolled_box)
+
         scrolled = Gtk.ScrolledWindow()
-        scrolled.add_with_viewport(scrolled_box)
+        scrolled.add(viewport)
         scrolled.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
 
         vbox.add(scrolled)
 
+        eb = Gtk.EventBox()
+        eb.add(vbox)
+
         self.scrolled_box = scrolled_box
-        self.top_widget = vbox
+        self.viewport = viewport
+
+        self.activate()
+
+        self.top_widget = eb
 
     def __init__(self, player_id=None, **kwds):
         self.player_id = player_id
@@ -171,10 +181,10 @@ class PieceLibraryGui(PieceLibrary):
         self.build_piece_tray_box()
 
     def activate(self):
-        pass
+        self.viewport.override_background_color(Gtk.StateFlags.NORMAL, Gdk.RGBA(0,0,0,0))
 
     def deactivate(self):
-        pass
+        self.viewport.override_background_color(Gtk.StateFlags.NORMAL, Gdk.RGBA(.4,.3,.3,1))
 
     def play_move(self, move):
         super(PieceLibraryGui, self).play_move(move)
