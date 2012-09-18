@@ -12,7 +12,6 @@ class GameServer(object):
 
     """Connects to server"""
     def join_game(self, board_constructor=None):
-        self.connection.connect()
         self.sock = self.connection.get_socket()
 
         # Send join message, blocks until a new game is ready

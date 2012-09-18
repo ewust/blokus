@@ -7,10 +7,6 @@ class Clear_Connection(object):
 
     def __init__(self, server=("127.0.0.1", 4080)):
         self.server = server
-
-    """Connects and authenticates to server"""
-    def connect(self):
-    
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         try:
             self.sock.connect(self.server)

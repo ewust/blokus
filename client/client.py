@@ -9,10 +9,14 @@ from bots.dummybot import DummyBot as MyBot
 #from SSL_client import SSL_Connection as Connection
 from Clear_client import Clear_Connection as Connection
 
-class Client():
+class Client(object):
     def _get_default_config(self):
         c = ConfigParser.SafeConfigParser({'server_host':'127.0.0.1', 'server_port':'4080'})
         return c
+
+    def build_server(self):
+        server = (self.config.get('DEFAULT', 'server_host'), self.config.getint('DEFAULT', 'server_port'))
+        self.server = GameServer(connection=Connection(server))
 
     def __init__(self, conf=None):
         self.config = self._get_default_config()
@@ -20,8 +24,7 @@ class Client():
         if conf:
             self.config.read(conf)
 
-        server = (self.config.get('DEFAULT', 'server_host'), self.config.getint('DEFAULT', 'server_port'))
-        self.server = GameServer(connection=Connection(server))
+        self.build_server()
 
     def play_game(self):
         player_id, board = self.server.join_game()
