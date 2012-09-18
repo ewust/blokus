@@ -132,6 +132,9 @@ class PieceLibraryGui(PieceLibrary):
     def _build_piece(self, piece_id, from_str):
         return PieceGui(player_id=self.player_id, piece_id=piece_id, from_str=from_str)
 
+    def _get_piece_top_widget(self, piece):
+        return piece.top_widget
+
     def build_piece_tray_box(self):
         vbox = Gtk.Grid()
         vbox.set_row_homogeneous(False)
@@ -153,7 +156,7 @@ class PieceLibraryGui(PieceLibrary):
         scrolled_box.set_valign(Gtk.Align.FILL)
         scrolled_box.set_row_spacing(20)
         for piece in self:
-            scrolled_box.add(piece.top_widget)
+            scrolled_box.add(self._get_piece_top_widget(piece))
 
         viewport = Gtk.Viewport()
         viewport.add(scrolled_box)
@@ -210,6 +213,22 @@ class PieceLibraryGui(PieceLibrary):
                 self.scrolled_box.attach(self[move.piece_id].top_widget, 0, idx, 1, 1)
 
         super(PieceLibraryGui, self).unplay_move(move)
+
+class ClickablePieceLibraryGui(PieceLibraryGui):
+    def _get_piece_top_widget(self, piece):
+        button = Gtk.Button()
+        button.set_image(piece.top_widget)
+        button.connect('clicked', self.highlight_callback, piece)
+        return button
+
+    def __init__(self, click_callback, **kwds):
+        self.click_callback = click_callback
+        super(ClickablePieceLibraryGui, self).__init__(**kwds)
+
+    def highlight_callback(self, widget, piece):
+        # XXX: highlight selected widget somehow more?
+        if self.click_callback:
+            click_callback(widget, piece)
 
 class BoardGui(Board):
     def build_menu_line(self):
