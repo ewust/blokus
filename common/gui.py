@@ -289,16 +289,12 @@ class BoardGui(Board):
         self.pieces_vbox = Gtk.VBox()
         self.board_area_box.add(self.pieces_vbox)
 
-    def build_piece_library(self, library, piece_ids):
-        super(BoardGui, self).build_piece_library(library, piece_ids)
-
-        self.piece_trays = {}
-        for p in xrange(self.player_count):
-            self.piece_trays[p] = PieceLibraryGui(
+    def build_piece_libraries(self):
+        self.piece_library = {p : PieceLibraryGui(
                     player_id=p,
-                    library=library,
-                    restrict_piece_ids_to=piece_ids,
-                    )
+                    library=self.library,
+                    restrict_piece_ids_to=self.restrict_piece_ids_to,
+                    ) for p in xrange(self.player_count)}
 
     def __init__(self, **kwds):
         super(BoardGui, self).__init__(**kwds)
@@ -312,7 +308,7 @@ class BoardGui(Board):
         self.board_and_trays_box.add(self.board_area_box)
         for p in xrange(self.player_count):
             self.board_and_trays_box.add(Gtk.VSeparator())
-            self.board_and_trays_box.add(self.piece_trays[p].top_widget)
+            self.board_and_trays_box.add(self.piece_library[p].top_widget)
         self.board_and_trays_box.add(Gtk.VSeparator())
 
         self.top_widget = self.board_and_trays_box
@@ -365,17 +361,17 @@ class BoardGui(Board):
         if move.is_skip():
             if move.is_voluntary_skip():
                 if unplay:
-                    self.piece_trays[move.player_id].activate()
+                    self.piece_library[move.player_id].activate()
                 else:
-                    self.piece_trays[move.player_id].deactivate()
+                    self.piece_library[move.player_id].deactivate()
             return
 
         if unplay:
-            self.piece_trays[move.player_id].add_piece(move.piece_id)
+            self.piece_library[move.player_id].add_piece(move.piece_id)
         else:
-            self.piece_trays[move.player_id].remove_piece(move.piece_id)
+            self.piece_library[move.player_id].remove_piece(move.piece_id)
 
-        piece = self.piece_library[move.piece_id]
+        piece = self.piece_library[move.player_id][move.piece_id]
         coords = piece.get_CCW_coords(move.rotation)
 
         for coord in coords:

@@ -14,7 +14,7 @@ class GameLogger(object):
             board.player_count,
             board.rows,
             board.cols,
-            board.piece_library.library,
+            board.library,
             ))
 
     def add_move(self, move):

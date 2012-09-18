@@ -36,16 +36,6 @@ class Bot(object):
 
 ## REPORT_MOVE EXTENDERS ##
 
-class PieceTracker(Bot):
-    def __init__(self, **kwds):
-        super(PieceTracker, self).__init__(**kwds)
-        self.remaining_pieces = copy(self.board.piece_library.piece_ids)
-
-    def report_move(self, move):
-        if not move.is_skip() and move.player_id == self.player_id:
-            self.remaining_pieces.remove(move.piece_id)
-        super(PieceTracker, self).report_move(move)
-
 class PlayOnReport(Bot):
     """Bots which define their own report_move *must* call
     super(NewBotClass, self).report_move(move)"""
@@ -82,9 +72,9 @@ class CornerLogger(PlayOnReport):
 
 ## GET_MOVE EXTENDERS ##
 
-class ExhaustiveSearchBot(PieceTracker,PlayOnReport):
+class ExhaustiveSearchBot(PlayOnReport):
     def get_move(self):
-        for piece in self.remaining_pieces:
+        for piece in self.board.get_remaining_piece_ids(self.player_id):
             for rotation in xrange(4):
                 for x in xrange(self.board.cols):
                     for y in xrange(self.board.rows):

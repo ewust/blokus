@@ -390,6 +390,7 @@ class PieceLibrary(object):
             self.pieces[pc_id] = self._build_piece(pc_id, from_str=pc)
 
         self.piece_ids = set(self.pieces.keys())
+        self.used_piece_ids = set()
 
     def __getitem__(self, pc_id):
         return self.pieces[pc_id]
@@ -404,6 +405,20 @@ class PieceLibrary(object):
             return self.__getitem__(self._next)
         except KeyError:
             raise StopIteration
+
+    def play_move(self, move):
+        if not move.is_skip():
+            self.used_piece_ids.add(move.piece_id)
+
+    def unplay_move(self, move):
+        if not move.is_skip():
+            self.used_piece_ids.remove(move.piece_id)
+
+    def get_used_piece_ids(self):
+        return self.used_piece_ids
+
+    def get_remaining_piece_ids(self):
+        return self.piece_ids - self.used_piece_ids
 
 
 class Block(object):
@@ -446,15 +461,20 @@ class Board(object):
     def build_board(self):
         self.board = [[Block() for x in xrange(self.rows)] for y in xrange(self.cols)]
 
-    def build_piece_library(self, library, piece_ids):
-        self.piece_library = PieceLibrary(library, piece_ids)
+    def build_piece_libraries(self):
+        self.piece_library = {x : PieceLibrary(
+            self.library,
+            self.restrict_piece_ids_to,
+            ) for x in xrange(self.player_count)}
 
     def __init__(self,
             library,
-            piece_ids=None,
+            restrict_piece_ids_to=None,
             shape=DEFAULT_BOARD_SHAPE,
             player_count=DEFAULT_PLAYER_COUNT,
             ):
+        self.library = library
+        self.restrict_piece_ids_to = restrict_piece_ids_to
         self.shape = shape
         self.rows = shape[0]
         self.cols = shape[1]
@@ -467,11 +487,10 @@ class Board(object):
 
         self.player_count = player_count
 
-        self.build_piece_library(library,piece_ids)
+        self.build_piece_libraries()
         self.build_board()
 
         self.moves = [list() for x in xrange(player_count)]
-        self.used_pieces = [set() for x in xrange(player_count)]
 
     def valid_key(self, key):
         if key.x not in xrange(self.rows) or key.y not in xrange(self.cols):
@@ -494,13 +513,10 @@ class Board(object):
         return self.piece_library[piece_id]
 
     def get_used_piece_ids(self, player_id):
-        return self.used_pieces[player_id]
+        return self.piece_library[player_id].get_used_piece_ids()
 
     def get_remaining_piece_ids(self, player_id):
-        return self.piece_library.piece_ids - self.get_used_piece_ids(player_id)
-
-    def is_valid_piece(self, piece_id):
-        return piece_id in self.piece_library.piece_ids
+        return self.piece_library[player_id].get_remaining_piece_ids()
 
     def is_valid_move(self, move, first_move=False):
         if not first_move and len(self.moves[move.player_id]) == 0:
@@ -545,7 +561,7 @@ class Board(object):
         return corner_touch
 
     def move_coords(self, move):
-        piece = self.piece_library[move.piece_id]
+        piece = self.piece_library[move.player_id][move.piece_id]
         rot = piece.get_CCW_coords(move.rotation)
         coords = [coord + move.position for coord in rot]
         return coords
@@ -556,13 +572,10 @@ class Board(object):
         if move.is_skip():
             return
 
-        self.used_pieces[move.player_id].add(move.piece_id)
+        self.piece_library[move.player_id].play_move(move)
 
-        piece = self.piece_library[move.piece_id]
-        coords = piece.get_CCW_coords(move.rotation)
-
-        for coord in coords:
-            self[move.position + coord].move = move
+        for coord in self.move_coords(move):
+            self[coord].move = move
 
 
     """
@@ -572,14 +585,10 @@ class Board(object):
     and it touches a corner
     """
     def is_valid_first_move(self, move):
-        if not self.is_valid_piece(move.piece_id):
-            return False
-
         if not self.is_valid_move(move, True):
             return False
 
-        for coord in self.piece_library[move.piece_id].get_CCW_coords(move.rotation):
-            coord += move.position
+        for coord in self.move_coords(move):
             if coord in self.corners:
                 return True
 
