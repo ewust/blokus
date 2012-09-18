@@ -142,6 +142,8 @@ class PieceLibraryGui(PieceLibrary):
         else:
             vbox.add(Gtk.Label('Piece Tray'))
 
+        vbox.add(Gtk.HSeparator())
+
         scrolled_box = Gtk.Grid()
         scrolled_box.set_row_homogeneous(False)
         scrolled_box.set_orientation(Gtk.Orientation.VERTICAL)
@@ -174,11 +176,30 @@ class PieceLibraryGui(PieceLibrary):
     def deactivate(self):
         pass
 
-    def add_piece(self, piece_id):
-        self.scrolled_box.add(self[piece_id].top_widget)
+    def play_move(self, move):
+        super(PieceLibraryGui, self).play_move(move)
 
-    def remove_piece(self, piece_id):
-        self.scrolled_box.remove(self[piece_id].top_widget)
+        if not move.is_skip():
+            self.scrolled_box.remove(self[move.piece_id].top_widget)
+
+    def unplay_move(self, move):
+        if not move.is_skip():
+            children = self.scrolled_box.get_children()
+            if len(children) == 0:
+                self.scrolled_box.add(self[move.piece_id].top_widget)
+            else:
+                pcs = list(self.get_remaining_piece_ids())
+                pcs.sort()
+                assert move.piece_id not in pcs
+                idx = 0
+                while move.piece_id > pcs[0]:
+                    pcs.pop(0)
+                    children.pop(0)
+                    idx += 1
+                self.scrolled_box.insert_next_to(children[0], Gtk.PositionType.TOP)
+                self.scrolled_box.attach(self[move.piece_id].top_widget, 0, idx, 1, 1)
+
+        super(PieceLibraryGui, self).unplay_move(move)
 
 class BoardGui(Board):
     def build_menu_line(self):
