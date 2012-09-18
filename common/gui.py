@@ -346,8 +346,8 @@ class BoardGui(Board):
                     restrict_piece_ids_to=self.restrict_piece_ids_to,
                     ) for p in xrange(self.player_count)}
 
-    def __init__(self, **kwds):
-        super(BoardGui, self).__init__(**kwds)
+    def __init__(self, *args, **kwds):
+        super(BoardGui, self).__init__(*args, **kwds)
 
         self.move_history = []
         self.current_move = -1

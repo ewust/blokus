@@ -1,18 +1,22 @@
 # vim: ts=4 et sw=4 sts=4
 
 import sys
+import threading
 
 import gi
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk
 from gi.repository import Gdk
+from gi.repository import GObject
+
+from common.gui import BoardGui
+from common.bot import Bot
 
 from client import Client
 from Clear_client import Clear_Connection as Connection
 from comm import GameServer
 
-from common.gui import BoardGui
-from common.bot import Bot
+from bots.human_bot import HumanBot
 
 class HumanClient(Client):
     def build_server(self):
@@ -68,6 +72,10 @@ class HumanClient(Client):
         while Gtk.events_pending():
             Gtk.main_iteration()
 
+    def __init__(self, *args, **kwds):
+        GObject.threads_init()
+        super(HumanClient, self).__init__(*args, **kwds)
+
     def on_connect(self, widget, host_entry, port_entry):
         server = (host_entry.get_text(), int(port_entry.get_text()))
         try:
@@ -97,17 +105,23 @@ class HumanClient(Client):
         if self.server is None:
             sys.exit()
 
-    def play_game(self):
-        player_id, board = self.server.join_game(BoardGui)
-        self.bot = MyBot(player_id=player_id, board=board)
-        while (self.server.game_loop(self.bot)):
-            pass
+    class GameLoop(threading.Thread):
+        kill_event = threading.Event()
+
+        def run(self):
+            while not self.kill_event.isSet():
+                while self.server.game_loop(self.bot):
+                    pass
+
+        def stop(self):
+            self.kill_event.set()
 
     def play_game(self):
-        player_id, board = self.server.join_game()
-        self.bot = MyBot(player_id=player_id, board=board)
-        while (self.server.game_loop(self.bot)):
-            pass
+        player_id, board = self.server.join_game(BoardGui)
+        self.bot = HumanBot(player_id=player_id, board=board)
+        self.loop_thread = self.GameLoop()
+        self.loop_thread.start()
+        Gtk.main()
 
 if __name__ == '__main__':
     # XXX: Write unit tests?
