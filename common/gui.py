@@ -11,7 +11,7 @@ from gi.repository import Gtk
 from gi.repository import Gdk
 from gi.repository import GdkPixbuf
 
-from common.data import Block,Board,Piece,PieceLibrary
+from common.data import Block,Board,Piece,PieceLibrary,Point
 
 __version__ = 0.1
 
@@ -318,6 +318,21 @@ class BoardGui(Board):
         self.window.add(self.top_widget)
         self.window.show_all()
 
+    def __getitem__(self, key):
+        key = Point(key)
+        self.valid_key(key)
+        treeiter = self.board['liststore'].get_iter(key.y)
+        block = self.board['liststore'].get_value(treeiter, key.x)
+        return block
+
+    def __setitem__(self, key, val):
+        key = Point(key)
+        self.valid_key(key)
+        if isinstance(val, BlockGui):
+            treeiter = self.board['liststore'].get_iter(key.y)
+            self.board['liststore'].set_value(treeiter, key.x, val)
+        else:
+            raise TypeError, "BlockGui object required"
 
     def destroy(self, widget, data=None):
         Gtk.main_quit()
@@ -358,6 +373,8 @@ class BoardGui(Board):
         self.update_labels()
 
     def do_move(self, move, unplay=False):
+        super(BoardGui, self).do_move(move, unplay)
+
         if move.is_skip():
             if move.is_voluntary_skip():
                 if unplay:
@@ -366,33 +383,16 @@ class BoardGui(Board):
                     self.piece_library[move.player_id].deactivate()
             return
 
-        if unplay:
-            self.piece_library[move.player_id].add_piece(move.piece_id)
-        else:
-            self.piece_library[move.player_id].remove_piece(move.piece_id)
-
-        piece = self.piece_library[move.player_id][move.piece_id]
-        coords = piece.get_CCW_coords(move.rotation)
-
-        for coord in coords:
-            coord += move.position
-            treeiter = self.board['liststore'].get_iter((coord.y))
-            block = self.board['liststore'].get_value(treeiter, coord.x)
-            if unplay:
-                block.move = None
-            else:
-                block.move = move
+        # HACK, pending http://stackoverflow.com/questions/12453024/
+        for coord in self.move_coords(move):
             # Call set_value with same block to force a re-paint, I believe this
             # ultimately chains down to the 'property-notify-event' signal being
             # sent to the relevent TreeView widget, but I'm not sure how to
             # replicate just that part of the functionality
+            treeiter = self.board['liststore'].get_iter((coord.y))
+            block = self.board['liststore'].get_value(treeiter, coord.x)
             self.board['liststore'].set_value(treeiter, coord.x, block)
 
-    def play_move(self, move):
-        self.do_move(move)
-
-    def unplay_move(self, move):
-        self.do_move(move, True)
 
     def main(self):
         Gtk.main()

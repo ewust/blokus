@@ -566,17 +566,33 @@ class Board(object):
         coords = [coord + move.position for coord in rot]
         return coords
 
-    def play_move(self, move):
-        self.moves[move.player_id].append(move)
+    def do_move(self, move, unplay=False):
+        if not unplay:
+            self.moves[move.player_id].append(move)
+        else:
+            if move != self.moves[move.player_id][-1]:
+                raise KeyError, "Moves must be unplayed in reverse chrono order"
+            self.moves[move.player_id].pop(-1)
 
         if move.is_skip():
             return
 
-        self.piece_library[move.player_id].play_move(move)
+        if not unplay:
+            self.piece_library[move.player_id].play_move(move)
+        else:
+            self.piece_library[move.player_id].unplay_move(move)
 
         for coord in self.move_coords(move):
-            self[coord].move = move
+            if not unplay:
+                self[coord].move = move
+            else:
+                self[coord].move = None
 
+    def play_move(self, move):
+        self.do_move(move)
+
+    def unplay_move(self, move):
+        self.do_move(move, True)
 
     """
     On the first move, players are only allowed to place pieces that touch
