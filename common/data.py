@@ -435,20 +435,8 @@ class Block(object):
     def pack(self):
         return struct.pack(Block.block_format, self.piece_id, self.player_id)
 
-"""
-The full game state.  Note that this is written avoiding any assumptions about
-how bots will use the data.  In other words, we give you interfaces to access
-the board block-by-block, to access pieces associated with those blocks, and
-to get information about per player pieces, but there are no optimizations.
-The Board class holds the minimum state required to fully represent the game
-and the helper functions are provided for convenience only.  More efficient
-algorithms are the server and bots' responsibility.
 
-For example, the server might subclass Board and implement caching of
-remaining pieces of each player for efficiency.
-"""
 class Board(object):
-
     """
     Base exception class for this object
     """
@@ -467,6 +455,13 @@ class Board(object):
             self.restrict_piece_ids_to,
             ) for x in xrange(self.player_count)}
 
+    """A Board object:
+
+    library               -- A string describing a known piece library
+    restrict_piece_ids_to -- OPTIONAL: Limit the pieces from the library to this set
+    shape                 -- A (rows,cols) tuple describing the board dimensions
+    player_count          -- The number of players
+    """
     def __init__(self,
             library,
             restrict_piece_ids_to=None,
@@ -484,7 +479,6 @@ class Board(object):
                 Point(self.rows-1, 0),
                 Point(self.rows-1, self.cols-1),
                 )
-
         self.player_count = player_count
 
         self.build_piece_libraries()
