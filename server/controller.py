@@ -72,37 +72,35 @@ class BasicGame(Game):
             if self.done:
                 break
 
-            if self.skips[player_id]:
-                move = Move.skip(player_id)
-            else:
+            if not self.skips[player_id]:
                 Message.serialized(l.sock, Message.TYPE_CONTROL, "TURN")
 
                 m = Message(l.sock, Message.TYPE_MOVE)
                 move = m.message_object
 
-            if not self.board.is_valid_move(move):
-                Message.serialized(l.sock, Message.TYPE_STATUS,\
-                        [Bot.STATUS_SKIPPED, "Illegal Move"])
-                move = Move.illegal(move.player_id)
-            else:
-                l.is_first_move = False
+                if not self.board.is_valid_move(move):
+                    Message.serialized(l.sock, Message.TYPE_STATUS,\
+                            [Bot.STATUS_SKIPPED, "Illegal Move"])
+                    move = Move.illegal(move.player_id)
+                else:
+                    l.is_first_move = False
 
-            if move.is_skip():
-                self.skips[player_id] = True
+                if move.is_skip():
+                    self.skips[player_id] = True
 
-                if sum(self.skips) == 4:
-                    self.game_logger.add_move(move)
-                    print "=================="
-                    print "4 skips. Game Over"
-                    self.done = True
-                    for s in self.go_sem:
-                        s.release()
-                    break
+                    if sum(self.skips) == 4:
+                        self.game_logger.add_move(move)
+                        print "=================="
+                        print "4 skips. Game Over"
+                        self.done = True
+                        for s in self.go_sem:
+                            s.release()
+                        break
 
-            self.game_logger.add_move(move)
+                self.game_logger.add_move(move)
 
-            for s in self.socks:
-                Message.serialized(s, Message.TYPE_MOVE, move)
+                for s in self.socks:
+                    Message.serialized(s, Message.TYPE_MOVE, move)
 
             self.go_sem[(player_id+1) % 4].release()
 
