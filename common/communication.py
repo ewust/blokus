@@ -83,14 +83,24 @@ class Message():
         if message_type and message_type != self.message_type:
             raise TypeError, "Bad Message Type"
 
-        if object_constructor is None:
-            if self.message_type == Message.TYPE_BOARD:
+        if self.message_type == Message.TYPE_BOARD:
+            if object_constructor is None:
                 object_constructor = Board
-            elif self.message_type == Message.TYPE_MOVE:
+            self.message_object = object_constructor(
+                    library=self.message_object[0],
+                    restrict_piece_ids_to=self.message_object[1],
+                    shape=self.message_object[2],
+                    player_count=self.message_object[3],
+                    )
+        elif self.message_type == Message.TYPE_MOVE:
+            if object_constructor is None:
                 object_constructor = Move
-
-        if object_constructor is not None:
-            self.message_object = object_constructor(*self.message_object)
+            self.message_object = object_constructor(
+                    player_id=self.message_object[0],
+                    piece_id=self.message_object[1],
+                    rotation=self.message_object[2],
+                    position=self.message_object[3],
+                    )
 
     def match(self, message_type, message_object):
         if self.message_type != message_type:

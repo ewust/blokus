@@ -18,7 +18,7 @@ class GameServer(object):
         Message.serialized(self.sock, Message.TYPE_CONTROL, 'JOIN')
 
         m = Message(self.sock, Message.TYPE_ID)
-        player_id = m.message_object
+        self.player_id = m.message_object
 
         m = Message(self.sock, Message.TYPE_BOARD, board_constructor)
         board = m.message_object
@@ -27,7 +27,7 @@ class GameServer(object):
         if m.message_object != 'WAIT':
             raise NotImplementedError, "Unknown CONTROL message " + str(m)
 
-        return player_id, board
+        return self.player_id, board
 
     """Blocking "event" loop - waits for the server to send us messages"""
     def game_loop(self, bot):

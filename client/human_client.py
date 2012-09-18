@@ -9,7 +9,7 @@ from gi.repository import Gtk
 from gi.repository import Gdk
 from gi.repository import GObject
 
-from common.gui import BoardGui
+from common.gui import *
 from common.bot import Bot
 
 from client import Client
@@ -17,6 +17,23 @@ from Clear_client import Clear_Connection as Connection
 from comm import GameServer
 
 from bots.human_bot import HumanBot
+
+class HumanBoardGui(BoardGui):
+    def __init__(self, player_id, *args, **kwds):
+        self.player_id = player_id
+        super(HumanBoardGui, self).__init__(*args, **kwds)
+
+    def build_piece_libraries(self):
+        self.piece_library = {p : PieceLibraryGui(
+                    player_id=p,
+                    library=self.library,
+                    restrict_piece_ids_to=self.restrict_piece_ids_to,
+                    ) for p in (set(xrange(self.player_count)) - set([self.player_id]))}
+        self.piece_library[self.player_id] = ClickablePieceLibraryGui(
+                    player_id=self.player_id,
+                    library=self.library,
+                    restrict_piece_ids_to=self.restrict_piece_ids_to,
+                    )
 
 class HumanClient(Client):
     def build_server(self):
@@ -105,23 +122,27 @@ class HumanClient(Client):
         if self.server is None:
             sys.exit()
 
+    def board_builder(self, **kwds):
+        return HumanBoardGui(player_id=self.server.player_id, **kwds)
+
     class GameLoop(threading.Thread):
-        kill_event = threading.Event()
+        def __init__(self, game_server, bot, **kwds):
+            self.game_server = game_server
+            self.bot = bot
+            super(HumanClient.GameLoop, self).__init__(**kwds)
 
         def run(self):
-            while not self.kill_event.isSet():
-                while self.server.game_loop(self.bot):
-                    pass
-
-        def stop(self):
-            self.kill_event.set()
+            while self.game_server.game_loop(self.bot):
+                pass
 
     def play_game(self):
-        player_id, board = self.server.join_game(BoardGui)
+        player_id, board = self.server.join_game(board_constructor=self.board_builder)
         self.bot = HumanBot(player_id=player_id, board=board)
-        self.loop_thread = self.GameLoop()
+        self.loop_thread = self.GameLoop(self.server, self.bot)
+        self.loop_thread.daemon = True
         self.loop_thread.start()
         Gtk.main()
+        sys.exit()
 
 if __name__ == '__main__':
     # XXX: Write unit tests?

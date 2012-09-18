@@ -221,7 +221,7 @@ class ClickablePieceLibraryGui(PieceLibraryGui):
         button.connect('clicked', self.highlight_callback, piece)
         return button
 
-    def __init__(self, click_callback, **kwds):
+    def __init__(self, click_callback=None, **kwds):
         self.click_callback = click_callback
         super(ClickablePieceLibraryGui, self).__init__(**kwds)
 

@@ -57,7 +57,7 @@ class BasicGame(Game):
         m = Message(l.sock)
         if not m.match(Message.TYPE_CONTROL, "JOIN"):
             raise
-        print "Got JOIN from " + l.user
+        print "Got JOIN from %s (assigned player_id %d)" % (l.user, player_id)
 
         Message.serialized(l.sock, Message.TYPE_ID, player_id)
         Message.serialized(l.sock, Message.TYPE_BOARD, self.board)
