@@ -73,31 +73,24 @@ class Message():
 
     """Takes a socket and blocks until it has read exactly enough
     bytes to parse out one message"""
-    def __init__(self, sock, message_type=None):
+    def __init__(self, sock, message_type=None, object_constructor=None):
         i = sock.recv(4, socket.MSG_WAITALL)
         i = struct.unpack(">I", i)[0]
 
         msg = sock.recv(i, socket.MSG_WAITALL)
         self.message_type, self.message_object = json.loads(msg)
 
-        if self.message_type == Message.TYPE_BOARD:
-            library = self.message_object.pop(0)
-            restrict_piece_ids_to = self.message_object.pop(0)
-            shape = self.message_object.pop(0)
-            player_count = self.message_object.pop(0)
-            board = Board(
-                    library=library,
-                    restrict_piece_ids_to=restrict_piece_ids_to,
-                    shape=shape,
-                    player_count=player_count,
-                    )
-            self.message_object = board
-
-        elif self.message_type == Message.TYPE_MOVE:
-            self.message_object = Move(*self.message_object)
-
         if message_type and message_type != self.message_type:
             raise TypeError, "Bad Message Type"
+
+        if object_constructor is None:
+            if self.message_type == Message.TYPE_BOARD:
+                object_constructor = Board
+            elif self.message_type == Message.TYPE_MOVE:
+                object_constructor = Move
+
+        if object_constructor is not None:
+            self.message_object = object_constructor(*self.message_object)
 
     def match(self, message_type, message_object):
         if self.message_type != message_type:

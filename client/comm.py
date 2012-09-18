@@ -5,19 +5,15 @@ from common.data import Board,PieceLibrary
 # temp, I don't like this much cross-ref..
 from common.bot import Bot
 
-#from SSL_client import SSL_Connection as Connection
-from Clear_client import Clear_Connection as Connection
+class GameServer(object):
 
-class ServerConnection(object):
-
-    def __init__(self, server=None):
-        self.server = server
+    def __init__(self, connection):
+        self.connection = connection
 
     """Connects to server"""
-    def join_game(self):
-        self.conn = Connection()
-        self.conn.connect()
-        self.sock = self.conn.get_socket()
+    def join_game(self, board_constructor=None):
+        self.connection.connect()
+        self.sock = self.connection.get_socket()
 
         # Send join message, blocks until a new game is ready
         Message.serialized(self.sock, Message.TYPE_CONTROL, 'JOIN')
@@ -25,7 +21,7 @@ class ServerConnection(object):
         m = Message(self.sock, Message.TYPE_ID)
         player_id = m.message_object
 
-        m = Message(self.sock, Message.TYPE_BOARD)
+        m = Message(self.sock, Message.TYPE_BOARD, board_constructor)
         board = m.message_object
 
         m = Message(self.sock, Message.TYPE_CONTROL)
