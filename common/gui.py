@@ -43,7 +43,12 @@ class BlockGui(Block):
             3 : 'green',
             }
 
-    def __init__(self, color=None, player_id=None, **kwds):
+    def __init__(self,
+            color=None,
+            player_id=None,
+            on_enter=None,
+            on_leave=None,
+            **kwds):
         # These must exist first as self.move is set in Block() constructor
         self.image = Gtk.Image()
 
@@ -60,7 +65,13 @@ class BlockGui(Block):
         super(BlockGui, self).__init__(**kwds)
 
         # And finish constructing ourself
-        self.top_widget = self.image
+        self.eb = Gtk.EventBox()
+        self.eb.add(self.image)
+        if on_enter:
+            self.eb.connect('enter-notify-event', on_enter)
+        if on_leave:
+            self.eb.connect('leave-notify-event', on_leave)
+        self.top_widget = self.eb
 
     def __setattr__(self, name, value):
         super(BlockGui, self).__setattr__(name, value)
@@ -339,6 +350,7 @@ class BoardGui(Board):
         self.window = Gtk.Window(Gtk.WindowType.TOPLEVEL)
         self.window.connect("destroy", self.destroy)
         self.window.add(self.top_widget)
+
         self.window.show_all()
 
     def destroy(self, widget, data=None):
