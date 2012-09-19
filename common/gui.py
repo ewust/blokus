@@ -61,9 +61,15 @@ class BlockGui(Block):
         self.watched_attrs.append('player_id')
         if color is not None:
             if color not in BlockGui.pixbufs.keys():
-                raise TypeError, "Color must be one of: " + str(BlockGui.pixbufs.keys())
+                raise TypeError, "Color must be one of: %s, got %s" % (
+                        str(BlockGui.pixbufs.keys()),
+                        str(color),
+                        )
         self.color = color
         self.watched_attrs.append('color')
+
+        self.attempt_play_id = None
+        self.watched_attrs.append('attempt_play_id')
 
         self.force_color = None
         self.watched_attrs.append('force_color')
@@ -75,9 +81,9 @@ class BlockGui(Block):
         self.eb = Gtk.EventBox()
         self.eb.add(self.image)
         if on_enter:
-            self.eb.connect('enter-notify-event', on_enter)
+            self.eb.connect('enter-notify-event', on_enter, self)
         if on_leave:
-            self.eb.connect('leave-notify-event', on_leave)
+            self.eb.connect('leave-notify-event', on_leave, self)
         self.eb.set_visible_window(False)
         self.top_widget = self.eb
 
@@ -89,15 +95,21 @@ class BlockGui(Block):
 
     def get_pixbuf(self):
         if self.force_color is not None:
-            return BlockGui.pixbufs[self.force_color]
+            return self.pixbufs[self.force_color]
+        if self.attempt_play_id is not None:
+            try:
+                self.move.player_id
+                return self.pixbufs['black']
+            except AttributeError:
+                return self.pixbufs[self.id_to_color[self.attempt_play_id]]
         if self.player_id is not None:
-            return BlockGui.pixbufs[BlockGui.id_to_color[self.player_id]]
+            return self.pixbufs[self.id_to_color[self.player_id]]
         if self.color is not None:
-            return BlockGui.pixbufs[self.color]
+            return self.pixbufs[self.color]
         try:
-            return BlockGui.pixbufs[BlockGui.id_to_color[self.move.player_id]]
+            return self.pixbufs[self.id_to_color[self.move.player_id]]
         except AttributeError:
-            return BlockGui.pixbufs['empty']
+            return self.pixbufs['empty']
 
 class BlockRenderer(Gtk.CellRendererPixbuf):
     __gproperties__ = {
@@ -311,7 +323,7 @@ class ClickablePieceLibraryGui(PieceLibraryGui):
             pass
         self.last_pressed = (widget, event, piece_ref)
         if self.on_button_press_event:
-            self.on_button_press_event(widget, event, data)
+            self.on_button_press_event(widget, event, piece_ref)
 
 class BoardGui(Board):
     BlockClass = BlockGui

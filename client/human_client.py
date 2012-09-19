@@ -20,7 +20,13 @@ from bots.human_bot import HumanBot
 class HumanBoardGui(BoardGui):
     def __init__(self, player_id, *args, **kwds):
         self.player_id = player_id
+        self.BlockClassKwds.update({
+            'on_enter' : self.on_block_enter,
+            'on_leave' : self.on_block_leave,
+            })
         super(HumanBoardGui, self).__init__(*args, **kwds)
+
+        self.current_piece = None
 
     def build_piece_libraries(self):
         self.piece_library = {p : PieceLibraryGui(
@@ -32,7 +38,32 @@ class HumanBoardGui(BoardGui):
                     player_id=self.player_id,
                     library=self.library,
                     restrict_piece_ids_to=self.restrict_piece_ids_to,
+                    on_button_press_event=self.on_piece_tray_click,
                     )
+
+    def on_piece_tray_click(self, widget, event, piece):
+        if piece.clicked:
+            self.current_piece = piece
+            self.current_piece_rotation = 0
+            self.current_piece_coords = self.current_piece.get_CCW_coords(self.current_piece_rotation)
+        else:
+            self.current_piece = None
+
+    def on_block_helper(self, block, val):
+        if self.current_piece is not None:
+            b = self.index(block)
+            for c in self.current_piece_coords:
+                a = b + c
+                try:
+                    self[a].attempt_play_id = val
+                except IndexError:
+                    pass
+
+    def on_block_enter(self, widget, event, block):
+        self.on_block_helper(block, self.player_id)
+
+    def on_block_leave(self, widget, event, block):
+        self.on_block_helper(block, None)
 
 class HumanClient(Client):
     def build_server(self):
