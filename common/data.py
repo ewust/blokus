@@ -216,8 +216,11 @@ class Piece(object):
         self.edges = {}
         self.corners = {}
 
+    def _gen_repr_keys(self):
+        return "piece_id=%d, from_coords=%s," % (self.piece_id, str(self.coords))
+
     def __repr__(self):
-        return "Piece(piece_id=%d, from_coords=%s)" % (self.piece_id, str(self.coords))
+        return "%s(%s)" % (self.__class__.__name__, self._gen_repr_keys())
 
     def __str__(self):
         grid = ""

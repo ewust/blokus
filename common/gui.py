@@ -156,8 +156,16 @@ class PieceGui(Piece):
 
         self.top_widget = self.grid
 
+    def _gen_repr_keys(self):
+        return "player_id=%s,%s" % (repr(self.player_id), super(PieceGui, self)._gen_repr_keys())
+
 class ClickablePieceGui(PieceGui):
-    def __init__(self, on_button_pressed_event=None, **kwds):
+    def __init__(self,
+            highlight_on_button_press_event=True,
+            on_button_press_event=None,
+            **kwds):
+        self.highlight_on_button_press_event = highlight_on_button_press_event
+        self.on_button_press_event = on_button_press_event
         super(ClickablePieceGui, self).__init__(**kwds)
 
         self.clicked = False
@@ -165,23 +173,37 @@ class ClickablePieceGui(PieceGui):
         self.eb = Gtk.EventBox()
         self.eb.add(self.grid)
 
-        on_button_pressed_event = self.test_on_button_press
-        if on_button_pressed_event:
-            self.eb.connect('button-press-event', on_button_pressed_event)
+        self.eb.connect('button-press-event', self.on_button_press, self)
 
         self.top_widget = self.eb
 
-    def test_on_button_press(self, widget, event, data=None):
+    def _gen_repr_keys(self):
+        return "highlight_on_button_press_event=%s,on_button_press_event=%s,%s" % (
+                self.highlight_on_button_press_event,
+                repr(self.on_button_press_event),
+                super(ClickablePieceGui, self)._gen_repr_keys())
+
+    def unclick(self):
+        self.clicked = False
+        self.highlight(None)
+
+    def highlight(self, color='white'):
         for b in self.real_blocks:
+            b.force_color = color
+
+    def on_button_press(self, widget, event, piece_ref):
+        if self.highlight_on_button_press_event:
             if self.clicked:
-                b.force_color = None
+                self.highlight(None)
             else:
-                b.force_color = 'white'
+                self.highlight()
+
         self.clicked = not self.clicked
+        if self.on_button_press_event:
+            self.on_button_press_event(widget, event, piece_ref)
 
 class PieceLibraryGui(PieceLibrary):
     PieceClass = PieceGui
-    PieceClassKwds = PieceLibrary.PieceClassKwds
 
     def _get_piece_top_widget(self, piece):
         return piece.top_widget
@@ -270,6 +292,25 @@ class PieceLibraryGui(PieceLibrary):
 
 class ClickablePieceLibraryGui(PieceLibraryGui):
     PieceClass = ClickablePieceGui
+
+    def __init__(self, on_button_press_event=None, **kwds):
+        self.on_button_press_event = on_button_press_event
+        self.PieceClassKwds.update({
+            'on_button_press_event' : self.on_button_press
+            })
+        super(ClickablePieceLibraryGui, self).__init__(**kwds)
+
+        self.generating = False
+
+    def on_button_press(self, widget, event, piece_ref):
+        try:
+            if piece_ref != self.last_pressed[2]:
+                self.last_pressed[2].unclick()
+        except AttributeError as e:
+            pass
+        self.last_pressed = (widget, event, piece_ref)
+        if self.on_button_press_event:
+            self.on_button_press_event(widget, event, data)
 
 class BoardGui(Board):
     BlockClass = BlockGui
