@@ -15,6 +15,16 @@ from common.data import Block,Board,Piece,PieceLibrary,Point
 
 __version__ = 0.1
 
+def test_callback(widget, *args):
+    global test_callback_count
+    try:
+        test_callback_count += 1
+    except NameError:
+        test_callback_count = 1
+    print 'test_callback #', test_callback_count
+    print '\t' + str(widget)
+    print '\t' + str(args)
+
 class BlockGui(Block):
     pixbufs = {
             'alpha' : GdkPixbuf.Pixbuf.new_from_file('common/resources/block_alpha.png'),
