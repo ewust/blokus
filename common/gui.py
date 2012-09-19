@@ -241,6 +241,8 @@ class ClickablePieceLibraryGui(PieceLibraryGui):
             click_callback(widget, piece)
 
 class BoardGui(Board):
+    BlockClass = BlockGui
+
     def build_menu_line(self):
         self.menu_line_elements = []
 

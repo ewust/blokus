@@ -437,6 +437,8 @@ class Block(object):
 
 
 class Board(object):
+    BlockClass = Block
+
     """
     Base exception class for this object
     """
@@ -447,7 +449,7 @@ class Board(object):
         pass
 
     def build_board(self):
-        self.board = [[Block() for x in xrange(self.rows)] for y in xrange(self.cols)]
+        self.board = [[self.BlockClass() for x in xrange(self.rows)] for y in xrange(self.cols)]
 
     def build_piece_libraries(self):
         self.piece_library = {x : PieceLibrary(
@@ -498,10 +500,10 @@ class Board(object):
     def __setitem__(self, key, val):
         key = Point(key)
         self.valid_key(key)
-        if isinstance(val, Block):
+        if isinstance(val, self.BlockClass):
             self.board[key.x][key.y] = val
         else:
-            raise TypeError, "Block object required"
+            raise TypeError, str(self.BlockClass) + " expected"
 
     def get_piece(self, piece_id):
         return self.piece_library[piece_id]
