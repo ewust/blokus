@@ -43,7 +43,8 @@ class BlockGui(Block):
             }
 
     def __init__(self, color=None, player_id=None, **kwds):
-        super(BlockGui, self).__init__(**kwds)
+        # These must exist first as self.move is set in Block() constructor
+        self.image = Gtk.Image()
 
         if player_id is not None:
             if player_id not in BlockGui.id_to_color.keys():
@@ -53,6 +54,18 @@ class BlockGui(Block):
             if color not in BlockGui.pixbufs.keys():
                 raise TypeError, "Color must be one of: " + str(BlockGui.pixbufs.keys())
         self.color = color
+
+        # Now we build the rest of the block
+        super(BlockGui, self).__init__(**kwds)
+
+        # And finish constructing ourself
+        self.top_widget = self.image
+
+    def __setattr__(self, name, value):
+        super(BlockGui, self).__setattr__(name, value)
+
+        if name == 'move':
+            self.image.set_from_pixbuf(self.get_pixbuf())
 
     def get_pixbuf(self):
         if self.player_id is not None:
@@ -87,56 +100,36 @@ class BlockRenderer(Gtk.CellRendererPixbuf):
 GObject.type_register(BlockRenderer)
 
 class PieceGui(Piece):
-    def build_treeview(self):
-        fmt = []
-        for c in xrange(self.shape[0]):
-            fmt.append(GObject.TYPE_PYOBJECT)
-        liststore = Gtk.ListStore(*fmt)
+    def build_grid(self):
+        grid = Gtk.Grid()
+        grid.set_row_spacing(1)
+        grid.set_column_spacing(1)
 
         for y in xrange(self.min_y, self.max_y+1):
             row = []
             for x in xrange(self.min_x, self.max_x+1):
+                (grid_x, grid_y) = (x - self.min_x, y - self.min_y)
                 if (x,y) in self.coords:
-                    row.append(BlockGui(player_id=self.player_id, color='empty'))
+                    grid.attach(
+                            BlockGui(player_id=self.player_id, color='empty').top_widget,
+                            grid_x, grid_y, 1, 1)
                 else:
-                    row.append(BlockGui(color='alpha'))
-            liststore.append(row)
+                    grid.attach(
+                            BlockGui(color='alpha').top_widget,
+                            grid_x, grid_y, 1, 1)
 
-        treeview = Gtk.TreeView(liststore)
+        grid.set_hexpand(True)
+        grid.set_halign(Gtk.Align.CENTER)
 
-        for col in xrange(self.shape[0]):
-            c = Gtk.TreeViewColumn(str(c))
-            treeview.append_column(c)
-            cell = BlockRenderer()
-            c.pack_start(cell, True)
-            c.add_attribute(cell, 'block', col)
-
-        treeview.set_headers_clickable(False)
-        treeview.set_rules_hint(False)
-        treeview.set_enable_search(False)
-        #treeview.set_fixed_height_mode(True)
-        treeview.set_headers_visible(False)
-        g = treeview.get_grid_lines()
-        treeview.set_grid_lines(g.NONE)
-
-        treeview.set_hexpand(True)
-        treeview.set_vexpand(True)
-        treeview.set_halign(Gtk.Align.CENTER)
-        treeview.set_valign(Gtk.Align.FILL)
-
-        treeview.override_background_color(Gtk.StateFlags.NORMAL, Gdk.RGBA(0,0,0,0))
-
-        treeview.get_selection().set_mode(Gtk.SelectionMode.NONE)
-
-        self.treeview = treeview
+        self.grid = grid
 
     def __init__(self, player_id=None, **kwds):
         super(PieceGui, self).__init__(**kwds)
 
         self.player_id = player_id
-        self.build_treeview()
+        self.build_grid()
 
-        self.top_widget = self.treeview
+        self.top_widget = self.grid
 
 class PieceLibraryGui(PieceLibrary):
     def _build_piece(self, piece_id, from_str):
@@ -164,7 +157,7 @@ class PieceLibraryGui(PieceLibrary):
         scrolled_box.set_vexpand(True)
         scrolled_box.set_halign(Gtk.Align.FILL)
         scrolled_box.set_valign(Gtk.Align.FILL)
-        scrolled_box.set_row_spacing(20)
+        scrolled_box.set_row_spacing(30)
         for piece in self:
             scrolled_box.add(self._get_piece_top_widget(piece))
 
@@ -271,48 +264,14 @@ class BoardGui(Board):
         for e in self.menu_line_elements:
             self.menu_line.pack_start(e, True, True, 0)
 
-    def build_board(self):
-        self.board = {}
+    def build_board_grid(self):
+        self.board_grid = Gtk.Grid()
+        self.board_grid.set_row_spacing(1)
+        self.board_grid.set_column_spacing(1)
 
-        fmt = []
-        for c in xrange(self.cols):
-            fmt.append(GObject.TYPE_PYOBJECT)
-        liststore = Gtk.ListStore(*fmt)
-
-        for r in xrange(self.rows):
-            row = []
-            for c in xrange(self.cols):
-                row.append(BlockGui())
-            liststore.append(row)
-
-        treeview = Gtk.TreeView(liststore)
-
-        for col in xrange(self.cols):
-            c = Gtk.TreeViewColumn(str(c))
-            treeview.append_column(c)
-            cell = BlockRenderer()
-            c.pack_start(cell, True)
-            c.add_attribute(cell, 'block', col)
-
-        treeview.set_headers_clickable(False)
-        treeview.set_rules_hint(False)
-        treeview.set_enable_search(False)
-        #treeview.set_fixed_height_mode(True)
-        treeview.set_headers_visible(False)
-        # I can't find the proper resolution to assign this directly?
-        g = treeview.get_grid_lines()
-        treeview.set_grid_lines(g.NONE)
-
-        treeview.set_halign(Gtk.Align.CENTER)
-        treeview.set_valign(Gtk.Align.CENTER)
-
-        treeview.get_selection().set_mode(Gtk.SelectionMode.NONE)
-
-        self.board['liststore'] = liststore
-        self.board['treeview'] = treeview
-        self.board['container'] = Gtk.VBox()
-
-        self.board['container'].pack_start(treeview, True, True, 0)
+        for y in xrange(self.rows):
+            for x in xrange(self.cols):
+                self.board_grid.attach(self[(x,y)].top_widget, x, y, 1, 1)
 
     def build_status_line(self):
         self.status_line_elements = []
@@ -336,7 +295,8 @@ class BoardGui(Board):
 
         self.game_vbox.pack_start(Gtk.HSeparator(), True, True, 0)
 
-        self.game_vbox.pack_start(self.board['container'], True, True, 0)
+        self.build_board_grid()
+        self.game_vbox.pack_start(self.board_grid, True, True, 0)
 
         self.game_vbox.pack_start(Gtk.HSeparator(), True, True, 0)
 
@@ -379,22 +339,6 @@ class BoardGui(Board):
         self.window.connect("destroy", self.destroy)
         self.window.add(self.top_widget)
         self.window.show_all()
-
-    def __getitem__(self, key):
-        key = Point(key)
-        self.valid_key(key)
-        treeiter = self.board['liststore'].get_iter(key.y)
-        block = self.board['liststore'].get_value(treeiter, key.x)
-        return block
-
-    def __setitem__(self, key, val):
-        key = Point(key)
-        self.valid_key(key)
-        if isinstance(val, BlockGui):
-            treeiter = self.board['liststore'].get_iter(key.y)
-            self.board['liststore'].set_value(treeiter, key.x, val)
-        else:
-            raise TypeError, "BlockGui object required"
 
     def destroy(self, widget, data=None):
         Gtk.main_quit()
@@ -444,17 +388,6 @@ class BoardGui(Board):
                 else:
                     self.piece_library[move.player_id].deactivate()
             return
-
-        # HACK, pending http://stackoverflow.com/questions/12453024/
-        for coord in self.move_coords(move):
-            # Call set_value with same block to force a re-paint, I believe this
-            # ultimately chains down to the 'property-notify-event' signal being
-            # sent to the relevent TreeView widget, but I'm not sure how to
-            # replicate just that part of the functionality
-            treeiter = self.board['liststore'].get_iter((coord.y))
-            block = self.board['liststore'].get_value(treeiter, coord.x)
-            self.board['liststore'].set_value(treeiter, coord.x, block)
-
 
     def main(self):
         Gtk.main()
