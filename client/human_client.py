@@ -7,7 +7,6 @@ import gi
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk
 from gi.repository import Gdk
-from gi.repository import GObject
 
 from common.gui import *
 from common.bot import Bot
@@ -90,7 +89,7 @@ class HumanClient(Client):
             Gtk.main_iteration()
 
     def __init__(self, *args, **kwds):
-        GObject.threads_init()
+        Gdk.threads_init()
         super(HumanClient, self).__init__(*args, **kwds)
 
     def on_connect(self, widget, host_entry, port_entry):
