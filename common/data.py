@@ -338,8 +338,8 @@ class Piece(object):
             return self.corners[nsteps]
 
 class PieceLibrary(object):
-    def _build_piece(self, piece_id, from_str):
-        return Piece(piece_id=piece_id, from_str=from_str)
+    PieceClass = Piece
+    PieceClassKwds = {}
 
     def __init__(self, library, restrict_piece_ids_to=None):
         self.library = library
@@ -387,7 +387,7 @@ class PieceLibrary(object):
             if restrict_piece_ids_to and pc_id not in restrict_piece_ids_to:
                 continue
 
-            self.pieces[pc_id] = self._build_piece(pc_id, from_str=pc)
+            self.pieces[pc_id] = self.PieceClass(piece_id=pc_id, from_str=pc, **self.PieceClassKwds)
 
         self.piece_ids = set(self.pieces.keys())
         self.used_piece_ids = set()

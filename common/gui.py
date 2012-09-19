@@ -50,16 +50,22 @@ class BlockGui(Block):
             on_leave=None,
             **kwds):
         # These must exist first as self.move is set in Block() constructor
+        self.watched_attrs = ['move']
         self.image = Gtk.Image()
 
         if player_id is not None:
             if player_id not in BlockGui.id_to_color.keys():
                 raise TypeError, "Player ID must be one of: " + str(BlockGui.id_to_color.keys())
         self.player_id = player_id
+        self.watched_attrs.append('player_id')
         if color is not None:
             if color not in BlockGui.pixbufs.keys():
                 raise TypeError, "Color must be one of: " + str(BlockGui.pixbufs.keys())
         self.color = color
+        self.watched_attrs.append('color')
+
+        self.force_color = None
+        self.watched_attrs.append('force_color')
 
         # Now we build the rest of the block
         super(BlockGui, self).__init__(**kwds)
@@ -71,15 +77,18 @@ class BlockGui(Block):
             self.eb.connect('enter-notify-event', on_enter)
         if on_leave:
             self.eb.connect('leave-notify-event', on_leave)
+        self.eb.set_visible_window(False)
         self.top_widget = self.eb
 
     def __setattr__(self, name, value):
         super(BlockGui, self).__setattr__(name, value)
 
-        if name == 'move':
+        if name in self.watched_attrs:
             self.image.set_from_pixbuf(self.get_pixbuf())
 
     def get_pixbuf(self):
+        if self.force_color is not None:
+            return BlockGui.pixbufs[self.force_color]
         if self.player_id is not None:
             return BlockGui.pixbufs[BlockGui.id_to_color[self.player_id]]
         if self.color is not None:
@@ -117,13 +126,17 @@ class PieceGui(Piece):
         grid.set_row_spacing(1)
         grid.set_column_spacing(1)
 
+        self.real_blocks = []
+
         for y in xrange(self.min_y, self.max_y+1):
             row = []
             for x in xrange(self.min_x, self.max_x+1):
                 (grid_x, grid_y) = (x - self.min_x, y - self.min_y)
                 if (x,y) in self.coords:
+                    b = BlockGui(player_id=self.player_id, color='empty')
+                    self.real_blocks.append(b)
                     grid.attach(
-                            BlockGui(player_id=self.player_id, color='empty').top_widget,
+                            b.top_widget,
                             grid_x, grid_y, 1, 1)
                 else:
                     grid.attach(
@@ -143,9 +156,32 @@ class PieceGui(Piece):
 
         self.top_widget = self.grid
 
+class ClickablePieceGui(PieceGui):
+    def __init__(self, on_button_pressed_event=None, **kwds):
+        super(ClickablePieceGui, self).__init__(**kwds)
+
+        self.clicked = False
+
+        self.eb = Gtk.EventBox()
+        self.eb.add(self.grid)
+
+        on_button_pressed_event = self.test_on_button_press
+        if on_button_pressed_event:
+            self.eb.connect('button-press-event', on_button_pressed_event)
+
+        self.top_widget = self.eb
+
+    def test_on_button_press(self, widget, event, data=None):
+        for b in self.real_blocks:
+            if self.clicked:
+                b.force_color = None
+            else:
+                b.force_color = 'white'
+        self.clicked = not self.clicked
+
 class PieceLibraryGui(PieceLibrary):
-    def _build_piece(self, piece_id, from_str):
-        return PieceGui(player_id=self.player_id, piece_id=piece_id, from_str=from_str)
+    PieceClass = PieceGui
+    PieceClassKwds = PieceLibrary.PieceClassKwds
 
     def _get_piece_top_widget(self, piece):
         return piece.top_widget
@@ -194,6 +230,9 @@ class PieceLibraryGui(PieceLibrary):
 
     def __init__(self, player_id=None, **kwds):
         self.player_id = player_id
+        self.PieceClassKwds.update({
+            'player_id' : self.player_id
+            })
         super(PieceLibraryGui, self).__init__(**kwds)
 
         self.build_piece_tray_box()
@@ -230,20 +269,7 @@ class PieceLibraryGui(PieceLibrary):
         super(PieceLibraryGui, self).unplay_move(move)
 
 class ClickablePieceLibraryGui(PieceLibraryGui):
-    def _get_piece_top_widget(self, piece):
-        button = Gtk.Button()
-        button.set_image(piece.top_widget)
-        button.connect('clicked', self.highlight_callback, piece)
-        return button
-
-    def __init__(self, click_callback=None, **kwds):
-        self.click_callback = click_callback
-        super(ClickablePieceLibraryGui, self).__init__(**kwds)
-
-    def highlight_callback(self, widget, piece):
-        # XXX: highlight selected widget somehow more?
-        if self.click_callback:
-            click_callback(widget, piece)
+    PieceClass = ClickablePieceGui
 
 class BoardGui(Board):
     BlockClass = BlockGui
