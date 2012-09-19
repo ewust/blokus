@@ -29,6 +29,7 @@ class BlockGui(Block):
     pixbufs = {
             'alpha' : GdkPixbuf.Pixbuf.new_from_file('common/resources/block_alpha.png'),
             'empty' : GdkPixbuf.Pixbuf.new_from_file('common/resources/block_empty.png'),
+            'white' : GdkPixbuf.Pixbuf.new_from_file('common/resources/block_white.png'),
             'blue' : GdkPixbuf.Pixbuf.new_from_file('common/resources/block_blue.png'),
             'yellow' : GdkPixbuf.Pixbuf.new_from_file('common/resources/block_yellow.png'),
             'red' : GdkPixbuf.Pixbuf.new_from_file('common/resources/block_red.png'),
