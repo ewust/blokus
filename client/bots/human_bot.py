@@ -17,3 +17,8 @@ class HumanBot(SimpleStatusHandler, Bot):
         Gdk.threads_enter()
         super(HumanBot, self).report_move()
         Gdk.threads_leave()
+
+    def report_status(self):
+        Gdk.threads_enter()
+        super(HumanBot, self).report_status()
+        Gdk.threads_leave()
