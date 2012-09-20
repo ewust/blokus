@@ -91,6 +91,17 @@ class HumanBoardGui(BoardGui):
             self.current_piece_coords = self.current_piece.get_CCW_coords(self.current_piece_rotation)
             self.on_block_enter(widget, event, block)
 
+    def get_status_string(self):
+        s = super(HumanBoardGui, self).get_status_string()
+
+        s += ' || '
+        if self.turn == self.player_id:
+            s += "It's your turn"
+        else:
+            s += "It's player %d's turn, waiting for move..." % (self.turn)
+
+        return s
+
 class HumanClient(Client):
     def build_server(self):
         default_host = self.config.get('DEFAULT', 'server_host')
@@ -198,7 +209,6 @@ class HumanClient(Client):
         self.loop_thread.daemon = True
         self.loop_thread.start()
         Gtk.main()
-        sys.exit()
 
 if __name__ == '__main__':
     # XXX: Write unit tests?

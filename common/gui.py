@@ -376,7 +376,7 @@ class BoardGui(Board):
     def build_status_line(self):
         self.status_line_elements = []
 
-        self.status_string = Gtk.Label(label="Waiting for new moves...")
+        self.status_string = Gtk.Label()
         self.status_line_elements.append(self.status_string)
 
         for e in self.status_line_elements:
@@ -435,6 +435,8 @@ class BoardGui(Board):
 
         self.top_widget = self.board_and_trays_box
 
+        self.update_labels()
+
         self.window = Gtk.Window(Gtk.WindowType.TOPLEVEL)
         self.window.connect("destroy", self.destroy)
         self.window.add(self.top_widget)
@@ -444,16 +446,22 @@ class BoardGui(Board):
     def destroy(self, widget, data=None):
         Gtk.main_quit()
 
+    def get_status_string(self):
+        if self.current_move > -1:
+            move = self.move_history[self.current_move]
+            return 'Last move: ' + str(move)
+        else:
+            return 'No moves played'
+
+    def update_status_string(self):
+        self.status_string.set_text(self.get_status_string())
+
     def update_labels(self):
         self.turn_id.set_text("Turn %d / %d" % (
             self.current_move + 1,
             len(self.move_history),
             ))
-        if self.current_move > -1:
-            move = self.move_history[self.current_move]
-            self.status_string.set_text('Last move: ' + str(move))
-        else:
-            self.status_string.set_text('No moves played')
+        self.update_status_string()
 
     def add_move(self, move):
         self.move_history.append(move)
