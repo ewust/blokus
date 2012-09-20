@@ -2,23 +2,23 @@
 
 import gi
 gi.require_version('Gtk', '3.0')
-from gi.repository import Gdk
+from gi.repository import Gdk,GObject
 
-from common.bot import SimpleStatusHandler,Bot
+from common.bot import SimpleStatusHandler,PlayOnReport,Bot
 from common.gui import BoardGui
 
-class HumanBot(SimpleStatusHandler, Bot):
+class HumanBot(SimpleStatusHandler, PlayOnReport, Bot):
+    def __init__(self, move_queue, **kwds):
+        self.move_queue = move_queue
+        super(HumanBot, self).__init__(**kwds)
+
     def get_move(self):
-        Gdk.threads_enter()
-        super(HumanBot, self).get_move()
-        Gdk.threads_leave()
+        return self.move_queue.get()
 
-    def report_move(self):
-        Gdk.threads_enter()
-        super(HumanBot, self).report_move()
-        Gdk.threads_leave()
+    def report_move(self, move):
+        GObject.idle_add(super(HumanBot, self).report_move, move)
+        GObject.idle_add(self.board.update_labels)
 
-    def report_status(self):
-        Gdk.threads_enter()
-        super(HumanBot, self).report_status()
-        Gdk.threads_leave()
+    def report_status(self, status_code, message):
+        GObject.idle_add(super(HumanBot, self).report_status, status_code, message)
+        GObject.idle_add(self.board.update_labels)

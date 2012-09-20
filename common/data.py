@@ -606,6 +606,8 @@ class Board(object):
             if move.is_voluntary_skip():
                 self.skips[self.turn] = False
 
+        print "Played a move, turn is now", self.turn
+
         if move.is_skip():
             return
 

@@ -1,7 +1,7 @@
 # vim: ts=4 et sw=4 sts=4
 
-import sys
 import threading
+from Queue import Queue
 
 import gi
 gi.require_version('Gtk', '3.0')
@@ -19,8 +19,9 @@ from comm import GameServer
 from bots.human_bot import HumanBot
 
 class HumanBoardGui(BoardGui):
-    def __init__(self, player_id, *args, **kwds):
+    def __init__(self, player_id, move_queue, *args, **kwds):
         self.player_id = player_id
+        self.move_queue = move_queue
         self.BlockClassKwds.update({
             'on_enter' : self.on_block_enter,
             'on_leave' : self.on_block_leave,
@@ -83,7 +84,7 @@ class HumanBoardGui(BoardGui):
                     position = self.index(block),
                     )
             if self.is_valid_move(move):
-                print "Would play now ", move
+                self.move_queue.put(move, block=False)
         elif event.button > 1:
             self.on_block_leave(widget, event, block)
             self.current_piece_rotation += 1
@@ -157,8 +158,12 @@ class HumanClient(Client):
             Gtk.main_iteration()
 
     def __init__(self, *args, **kwds):
+        self.move_queue = Queue()
+
         Gdk.threads_init()
+        Gdk.threads_enter()
         super(HumanClient, self).__init__(*args, **kwds)
+        Gdk.threads_leave()
 
     def on_connect(self, widget, host_entry, port_entry):
         server = (host_entry.get_text(), int(port_entry.get_text()))
@@ -190,7 +195,7 @@ class HumanClient(Client):
             sys.exit()
 
     def board_builder(self, **kwds):
-        return HumanBoardGui(player_id=self.server.player_id, **kwds)
+        return HumanBoardGui(player_id=self.server.player_id, move_queue=self.move_queue, **kwds)
 
     class GameLoop(threading.Thread):
         def __init__(self, game_server, bot, **kwds):
@@ -203,12 +208,14 @@ class HumanClient(Client):
                 pass
 
     def play_game(self):
+        Gdk.threads_enter()
         player_id, board = self.server.join_game(board_constructor=self.board_builder)
-        self.bot = HumanBot(player_id=player_id, board=board)
+        self.bot = HumanBot(player_id=player_id, board=board, move_queue=self.move_queue)
         self.loop_thread = self.GameLoop(self.server, self.bot)
         self.loop_thread.daemon = True
         self.loop_thread.start()
         Gtk.main()
+        Gdk.threads_leave()
 
 if __name__ == '__main__':
     # XXX: Write unit tests?
