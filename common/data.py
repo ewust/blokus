@@ -499,6 +499,8 @@ class Board(object):
         self.build_board()
 
         self.moves = [list() for x in xrange(player_count)]
+        self.turn = 0
+        self.skips = [False for x in xrange(player_count)]
 
     def valid_key(self, key):
         if key.x not in xrange(self.rows) or key.y not in xrange(self.cols):
@@ -529,12 +531,15 @@ class Board(object):
     def get_remaining_piece_ids(self, player_id):
         return self.piece_library[player_id].get_remaining_piece_ids()
 
-    def is_valid_move(self, move, first_move=False):
+    def is_valid_move(self, move, first_move=False, ignore_turn=False):
         if not first_move and len(self.moves[move.player_id]) == 0:
             return self.is_valid_first_move(move)
 
         if move.is_skip():
             return True
+
+        if move.player_id != self.turn:
+            return False
 
         if not move.piece_id in self.get_remaining_piece_ids(move.player_id):
             return False
@@ -580,10 +585,26 @@ class Board(object):
     def do_move(self, move, unplay=False):
         if not unplay:
             self.moves[move.player_id].append(move)
+
+            if move.is_voluntary_skip():
+                self.skips[self.turn] = True
+
+            if all(self.skips):
+                self.turn = -1
+            else:
+                self.turn = (self.turn + 1) % self.player_count
+                while self.skips[self.turn]:
+                    self.turn = (self.turn + 1) % self.player_count
         else:
             if move != self.moves[move.player_id][-1]:
                 raise KeyError, "Moves must be unplayed in reverse chrono order"
             self.moves[move.player_id].pop(-1)
+
+            # Safe as unplayed move is known to be last move from above
+            self.turn = move.player_id
+
+            if move.is_voluntary_skip():
+                self.skips[self.turn] = False
 
         if move.is_skip():
             return
