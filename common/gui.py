@@ -191,6 +191,8 @@ class ClickablePieceGui(PieceGui):
 
         self.eb.connect('button-press-event', self.on_button_press, self)
 
+        self.eb.set_visible_window(False)
+
         self.top_widget = self.eb
 
     def _gen_repr_keys(self):
@@ -317,6 +319,9 @@ class ClickablePieceLibraryGui(PieceLibraryGui):
         super(ClickablePieceLibraryGui, self).__init__(**kwds)
 
         self.generating = False
+
+    def activate(self):
+        self.viewport.override_background_color(Gtk.StateFlags.NORMAL, Gdk.RGBA(0,0,0,1))
 
     def on_button_press(self, widget, event, piece_ref):
         try:
