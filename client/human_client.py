@@ -71,6 +71,10 @@ class HumanBoardGui(BoardGui):
         if self.current_piece is None:
             return
 
+        # Filter double/triple click events
+        if event.type != Gdk.EventType.BUTTON_PRESS:
+            return
+
         if event.button == 1:
             move = Move(
                     player_id = self.player_id,
