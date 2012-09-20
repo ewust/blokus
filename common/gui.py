@@ -49,6 +49,7 @@ class BlockGui(Block):
             player_id=None,
             on_enter=None,
             on_leave=None,
+            on_button_press_event=None,
             **kwds):
         # These must exist first as self.move is set in Block() constructor
         self.watched_attrs = ['move']
@@ -84,6 +85,8 @@ class BlockGui(Block):
             self.eb.connect('enter-notify-event', on_enter, self)
         if on_leave:
             self.eb.connect('leave-notify-event', on_leave, self)
+        if on_button_press_event:
+            self.eb.connect('button-press-event', on_button_press_event, self)
         self.eb.set_visible_window(False)
         self.top_widget = self.eb
 

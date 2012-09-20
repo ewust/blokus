@@ -8,6 +8,7 @@ gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk
 from gi.repository import Gdk
 
+from common.data import Move
 from common.gui import *
 from common.bot import Bot
 
@@ -23,6 +24,7 @@ class HumanBoardGui(BoardGui):
         self.BlockClassKwds.update({
             'on_enter' : self.on_block_enter,
             'on_leave' : self.on_block_leave,
+            'on_button_press_event' : self.on_block_button_press_event,
             })
         super(HumanBoardGui, self).__init__(*args, **kwds)
 
@@ -64,6 +66,26 @@ class HumanBoardGui(BoardGui):
 
     def on_block_leave(self, widget, event, block):
         self.on_block_helper(block, None)
+
+    def on_block_button_press_event(self, widget, event, block):
+        if self.current_piece is None:
+            return
+
+        if event.button == 1:
+            move = Move(
+                    player_id = self.player_id,
+                    piece_id = self.current_piece.piece_id,
+                    rotation = self.current_piece_rotation,
+                    position = self.index(block),
+                    )
+            if self.is_valid_move(move):
+                print "Would play now ", move
+        elif event.button > 1:
+            self.on_block_leave(widget, event, block)
+            self.current_piece_rotation += 1
+            self.current_piece_rotation %= 4
+            self.current_piece_coords = self.current_piece.get_CCW_coords(self.current_piece_rotation)
+            self.on_block_enter(widget, event, block)
 
 class HumanClient(Client):
     def build_server(self):
