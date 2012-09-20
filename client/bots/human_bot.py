@@ -16,9 +16,15 @@ class HumanBot(SimpleStatusHandler, PlayOnReport, Bot):
         return self.move_queue.get()
 
     def report_move(self, move):
-        GObject.idle_add(super(HumanBot, self).report_move, move)
-        GObject.idle_add(self.board.update_labels)
+        GObject.idle_add(self.real_report_move, move)
 
     def report_status(self, status_code, message):
-        GObject.idle_add(super(HumanBot, self).report_status, status_code, message)
-        GObject.idle_add(self.board.update_labels)
+        GObject.idle_add(self.real_report_status, status_code, message)
+
+    def real_report_move(self, move):
+        super(HumanBot, self).report_move(move)
+        self.board.update_labels()
+
+    def real_report_status(self, status_code, message):
+        super(HumanBot, self).report_status(status_code, message)
+        self.board.update_labels()

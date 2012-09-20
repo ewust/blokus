@@ -160,6 +160,7 @@ class HumanClient(Client):
     def __init__(self, *args, **kwds):
         self.move_queue = Queue()
 
+        GObject.threads_init()
         Gdk.threads_init()
         Gdk.threads_enter()
         super(HumanClient, self).__init__(*args, **kwds)
@@ -211,9 +212,13 @@ class HumanClient(Client):
         Gdk.threads_enter()
         player_id, board = self.server.join_game(board_constructor=self.board_builder)
         self.bot = HumanBot(player_id=player_id, board=board, move_queue=self.move_queue)
+        Gdk.threads_leave()
+
         self.loop_thread = self.GameLoop(self.server, self.bot)
         self.loop_thread.daemon = True
         self.loop_thread.start()
+
+        Gdk.threads_enter()
         Gtk.main()
         Gdk.threads_leave()
 
