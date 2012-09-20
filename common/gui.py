@@ -457,7 +457,6 @@ class BoardGui(Board):
         self.status_string.set_text(self.get_status_string())
 
     def update_labels(self):
-        print "Update labels called"
         self.turn_id.set_text("Turn %d / %d" % (
             self.current_move + 1,
             len(self.move_history),

@@ -73,17 +73,20 @@ class BasicGame(Game):
                 break
 
             if not self.skips[player_id]:
-                Message.serialized(l.sock, Message.TYPE_CONTROL, "TURN")
-
-                m = Message(l.sock, Message.TYPE_MOVE)
-                move = m.message_object
-
-                if not self.board.is_valid_move(move):
-                    Message.serialized(l.sock, Message.TYPE_STATUS,\
-                            [Bot.STATUS_SKIPPED, "Illegal Move"])
-                    move = Move.illegal(move.player_id)
+                if len(self.board.get_remaining_piece_ids(player_id)) == 0:
+                    move = Move.skip(player_id)
                 else:
-                    l.is_first_move = False
+                    Message.serialized(l.sock, Message.TYPE_CONTROL, "TURN")
+
+                    m = Message(l.sock, Message.TYPE_MOVE)
+                    move = m.message_object
+
+                    if not self.board.is_valid_move(move):
+                        Message.serialized(l.sock, Message.TYPE_STATUS,\
+                                [Bot.STATUS_SKIPPED, "Illegal Move"])
+                        move = Move.illegal(player_id)
+                    else:
+                        l.is_first_move = False
 
                 if move.is_skip():
                     self.skips[player_id] = True
