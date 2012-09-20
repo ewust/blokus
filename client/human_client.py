@@ -85,6 +85,8 @@ class HumanBoardGui(BoardGui):
                     )
             if self.is_valid_move(move):
                 self.move_queue.put(move, block=False)
+                self.on_block_leave(widget, event, block)
+                self.current_piece = None
         elif event.button > 1:
             self.on_block_leave(widget, event, block)
             self.current_piece_rotation += 1
