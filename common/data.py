@@ -19,10 +19,17 @@ class Move(object):
 
     move_id = 0
 
-    def __init__(self, player_id, piece_id, rotation=0, position=(0,0)):
+    def __init__(self,
+            player_id,
+            piece_id,
+            rotation=0,
+            mirror=False,
+            position=(0,0),
+            ):
         self.player_id = player_id
         self.piece_id = piece_id
         self.rotation = rotation
+        self.mirror = mirror
         self.position = Point(position)
 
         self.move_id = Move.move_id
@@ -56,8 +63,13 @@ class Move(object):
             return "Player %d timed out and their turn was skipped" %\
                     (self.player_id)
         else:
-            return "Player %d played piece %d rotated %d degrees at %s" %\
-                    (self.player_id, self.piece_id, self.rotation*90, str(self.position))
+            return "Player %d played piece %d rotated %d degrees%s at %s" % (
+                    self.player_id,
+                    self.piece_id,
+                    self.rotation*90,
+                    ["", " (mirrored)"][self.mirror],
+                    str(self.position)
+                    )
 
     def __repr__(self):
         return "Move #" + str(self.move_id) + ": " + str(self)
@@ -276,7 +288,6 @@ class Piece(object):
         return point in self.coords
 
     def __iter__(self):
-        print '__iter__'
         self._next = -1
         return self
 
@@ -288,57 +299,62 @@ class Piece(object):
             raise StopIteration
 
     """Returns the coordinates of this piece rotated counter-clockwise nsteps"""
-    def get_CCW_coords(self, nsteps=1):
-        assert nsteps >= 0
+    def get_transform_coords(self, rotation=0, mirror=False):
+        rotation %= 4
 
         try:
-            return self.rot[nsteps]
+            return self.rot[(rotation,mirror)]
         except KeyError:
-            rcoords = list(self.coords)
+            rcoords = [Point(c.x, c.y) for c in self.coords]
 
-            n = nsteps
+            n = rotation
             while n:
                 n -= 1
-                rcoords = [Point(-c.y, c.x) for c in rcoords]
+                for c in rcoords:
+                    (c.x, c.y) = (-c.y, c.x)
 
-            self.rot[nsteps] = rcoords
+            if mirror:
+                for c in rcoords:
+                    c.x = -c.x
+
+            self.rot[(rotation,mirror)] = rcoords
             return rcoords
 
-    """Returns the edges of this piece, optionally rotated nsteps CCW"""
-    def get_edges(self, nsteps=0):
-        assert nsteps >= 0
+    """Returns the edges of this piece, optionally transformed"""
+    def get_edges(self, rotation=0, mirror=False):
+        rotation %= 4
 
         try:
-            return self.edges[nsteps]
+            return self.edges[(rotation,mirror)]
         except KeyError:
             edges = set()
 
-            for pt in self.get_CCW_coords(nsteps):
+            for pt in self.get_transform_coords(rotation=rotation,mirror=mirror):
                 for e in Piece.EDGE_COORDS:
                     t = pt + e
                     if t not in self.coords:
                         edges.add(t)
 
-            self.edges[nsteps] = list(edges)
-            return self.edges[nsteps]
+            self.edges[(rotation,mirror)] = list(edges)
+            return self.edges[(rotation,mirror)]
 
-    """Returns the corners of this piece, optionally rotated nsteps CCW"""
-    def get_corners(self, nsteps=0):
-        assert nsteps >= 0
+    """Returns the corners of this piece, optionally transformed"""
+    def get_corners(self, rotation=0, mirror=False):
+        rotation %= 4
 
         try:
-            return self.corners[nsteps]
+            return self.corners[(rotation,mirror)]
         except KeyError:
             corners = set()
 
-            for pt in self.get_CCW_coords(nsteps):
+            for pt in self.get_transform_coords(rotation=rotation,mirror=mirror):
                 for c in Piece.CORNER_COORDS:
                     t = pt + c
-                    if t not in self.coords and t not in self.get_edges(nsteps):
+                    if t not in self.coords and t not in self.get_edges(rotation=rotation,mirror=mirror):
                         corners.add(t)
 
-            self.corners[nsteps] = list(corners)
-            return self.corners[nsteps]
+            self.corners[(rotation,mirror)] = list(corners)
+            return self.corners[(rotation,mirror)]
 
 class PieceLibrary(object):
     PieceClass = Piece
@@ -535,13 +551,20 @@ class Board(object):
         if not first_move and len(self.moves[move.player_id]) == 0:
             return self.is_valid_first_move(move)
 
+        self._valid_reason = "XXX Unset XXX"
+
         if move.is_skip():
+            self._valid_reason = "Skip Succeeded"
             return True
 
         if move.player_id != self.turn:
+            self._valid_reason = "Current turn %d, move id %d" % (
+                    self.turn, move.player_id)
             return False
 
         if not move.piece_id in self.get_remaining_piece_ids(move.player_id):
+            self._valid_reason = "Piece %d not in %d's remaining pieces" % (
+                    move.piece_id, move.player_id)
             return False
 
         coords = self.move_coords(move)
@@ -552,14 +575,21 @@ class Board(object):
         for coord in coords:
             try:
                 if self[coord].move:
+                    self._valid_reason = \
+"Cannot play in coord %s, which has move %s" % (str(coord), str(self[coord].move))
                     return False
             except IndexError:
+                self._valid_reason =\
+"Illegal coord %s is outside board area" % (str(coord))
                 return False
 
             # Check for edge touches of this block [illegal]
             for neigh in Piece.EDGE_COORDS:
                 try:
                     if self[coord + neigh].move.player_id == move.player_id:
+                        self._valid_reason = \
+"Cannot play in coord %s, neighbors %s with move %s" % (
+        str(coord), str(coord + neigh), self[coord + neigh].move)
                         return False
                 except (IndexError, AttributeError):
                     pass
@@ -574,11 +604,13 @@ class Board(object):
                     except (IndexError, AttributeError):
                         pass
 
+        if not corner_touch:
+            self._valid_reason = "Move touches no corners"
         return corner_touch
 
     def move_coords(self, move):
         piece = self.piece_library[move.player_id][move.piece_id]
-        rot = piece.get_CCW_coords(move.rotation)
+        rot = piece.get_transform_coords(rotation=move.rotation, mirror=move.mirror)
         coords = [coord + move.position for coord in rot]
         return coords
 
@@ -639,5 +671,7 @@ class Board(object):
         for coord in self.move_coords(move):
             if coord in self.corners:
                 return True
+
+        self._valid_reason = "First move must be in a corner"
 
         return False

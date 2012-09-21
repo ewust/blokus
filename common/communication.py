@@ -20,6 +20,7 @@ class BlockusEncoder(json.JSONEncoder):
                     obj.player_id,
                     obj.piece_id,
                     obj.rotation,
+                    obj.mirror,
                     obj.position
                     ]
         elif isinstance(obj, Point):
@@ -99,7 +100,8 @@ class Message():
                     player_id=self.message_object[0],
                     piece_id=self.message_object[1],
                     rotation=self.message_object[2],
-                    position=self.message_object[3],
+                    mirror=self.message_object[3],
+                    position=self.message_object[4],
                     )
 
     def match(self, message_type, message_object):

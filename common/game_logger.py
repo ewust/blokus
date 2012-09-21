@@ -9,7 +9,7 @@ class GameLogger(object):
         self.display = display
 
         self.o = open('game.log', 'w')
-        self.o.write('#Version=0.11\n')
+        self.o.write('#Version=0.12\n')
         self.o.write('#num_players=%d,rows=%d,cols=%d,library=%s\n' % (
             board.player_count,
             board.rows,
@@ -24,10 +24,11 @@ class GameLogger(object):
         if self.play:
             self.board.play_move(move)
 
-        self.o.write("%d,%d,%d,%d,%d\n" % (
+        self.o.write("%d,%d,%d,%d,%d,%d\n" % (
             move.player_id,
             move.piece_id,
             move.rotation,
+            int(move.mirror),
             move.position.x,
             move.position.y,
             ))
@@ -41,8 +42,9 @@ class GameParser(object):
         txt,num = version.split('=')
         if txt.lower() != 'version':
             raise TypeError, "Unknown log file format. Line: " + version
-        if float(num) > 0.11:
+        if float(num) > 0.12:
             raise TypeError, "Unknown log file format. Version: " + num
+        self.version = float(num)
 
         try:
             params = self.l.readline().strip().strip('#')
@@ -85,7 +87,17 @@ class GameParser(object):
 
     def next(self):
         try:
-            player_id, piece_id, rotation, x, y = self.l.readline().strip().split(',')
+            if self.version <= 0.11:
+                player_id, piece_id, rotation, x, y = self.l.readline().strip().split(',')
+                mirror=False
+            else:
+                player_id, piece_id, rotation, mirror, x, y = self.l.readline().strip().split(',')
         except ValueError:
             raise StopIteration
-        return Move(int(player_id), int(piece_id), int(rotation), (int(x),int(y)))
+        return Move(
+                player_id=int(player_id),
+                piece_id=int(piece_id),
+                rotation=int(rotation),
+                mirror=bool(mirror),
+                position=(int(x),int(y)),
+                )

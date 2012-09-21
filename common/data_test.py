@@ -37,16 +37,16 @@ XX
 
     def test_rotation(self):
         piece = Piece(0, 'OX.\n.X.\n.XX')
-        self.assertEqual(piece.get_CCW_coords(0), [(0,0),(1,0),(1,1),(1,2),(2,2)])
-        self.assertEqual(piece.get_CCW_coords(1), [(0,0),(0,1),(-1,1),(-2,1),(-2,2)])
-        self.assertEqual(piece.get_CCW_coords(2), [(0,0),(-1,0),(-1,-1),(-1,-2),(-2,-2)])
-        self.assertEqual(piece.get_CCW_coords(3), [(0,0),(0,-1),(1,-1),(2,-1),(2,-2)])
-        self.assertEqual(piece.get_CCW_coords(0), [(0,0),(1,0),(1,1),(1,2),(2,2)])
-        self.assertEqual(piece.get_CCW_coords(1), [(0,0),(0,1),(-1,1),(-2,1),(-2,2)])
-        self.assertEqual(piece.get_CCW_coords(2), [(0,0),(-1,0),(-1,-1),(-1,-2),(-2,-2)])
-        self.assertEqual(piece.get_CCW_coords(3), [(0,0),(0,-1),(1,-1),(2,-1),(2,-2)])
-        self.assertEqual(piece.get_CCW_coords(4), [(0,0),(1,0),(1,1),(1,2),(2,2)])
-        self.assertEqual(piece.get_CCW_coords(4), [(0,0),(1,0),(1,1),(1,2),(2,2)])
+        self.assertEqual(piece.get_transform_coords(0), [(0,0),(1,0),(1,1),(1,2),(2,2)])
+        self.assertEqual(piece.get_transform_coords(1), [(0,0),(0,1),(-1,1),(-2,1),(-2,2)])
+        self.assertEqual(piece.get_transform_coords(2), [(0,0),(-1,0),(-1,-1),(-1,-2),(-2,-2)])
+        self.assertEqual(piece.get_transform_coords(3), [(0,0),(0,-1),(1,-1),(2,-1),(2,-2)])
+        self.assertEqual(piece.get_transform_coords(0), [(0,0),(1,0),(1,1),(1,2),(2,2)])
+        self.assertEqual(piece.get_transform_coords(1), [(0,0),(0,1),(-1,1),(-2,1),(-2,2)])
+        self.assertEqual(piece.get_transform_coords(2), [(0,0),(-1,0),(-1,-1),(-1,-2),(-2,-2)])
+        self.assertEqual(piece.get_transform_coords(3), [(0,0),(0,-1),(1,-1),(2,-1),(2,-2)])
+        self.assertEqual(piece.get_transform_coords(4), [(0,0),(1,0),(1,1),(1,2),(2,2)])
+        self.assertEqual(piece.get_transform_coords(4), [(0,0),(1,0),(1,1),(1,2),(2,2)])
 
 class BoardTests(unittest.TestCase):
     pass

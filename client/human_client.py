@@ -31,6 +31,21 @@ class HumanBoardGui(BoardGui):
 
         self.current_piece = None
 
+    def __setattr__(self, name, val):
+        super(HumanBoardGui, self).__setattr__(name, val)
+
+        if name == 'current_piece':
+            self.current_piece_rotation = 0
+            self.current_piece_mirror = False
+
+        if name in ('current_piece_rotation', 'current_piece_mirror'):
+            try:
+                self.current_piece_coords = self.current_piece.get_transform_coords(
+                        rotation=self.current_piece_rotation,
+                        mirror=self.current_piece_mirror)
+            except AttributeError as e:
+                pass
+
     def build_piece_libraries(self):
         self.piece_library = {p : PieceLibraryGui(
                     player_id=p,
@@ -47,8 +62,6 @@ class HumanBoardGui(BoardGui):
     def on_piece_tray_click(self, widget, event, piece):
         if piece.clicked:
             self.current_piece = piece
-            self.current_piece_rotation = 0
-            self.current_piece_coords = self.current_piece.get_CCW_coords(self.current_piece_rotation)
         else:
             self.current_piece = None
 
@@ -81,17 +94,22 @@ class HumanBoardGui(BoardGui):
                     player_id = self.player_id,
                     piece_id = self.current_piece.piece_id,
                     rotation = self.current_piece_rotation,
+                    mirror = self.current_piece_mirror,
                     position = self.index(block),
                     )
             if self.is_valid_move(move):
                 self.move_queue.put(move, block=False)
                 self.on_block_leave(widget, event, block)
                 self.current_piece = None
-        elif event.button > 1:
+            else:
+                print self._valid_reason
+        elif event.button == 2:
             self.on_block_leave(widget, event, block)
-            self.current_piece_rotation += 1
-            self.current_piece_rotation %= 4
-            self.current_piece_coords = self.current_piece.get_CCW_coords(self.current_piece_rotation)
+            self.current_piece_mirror = not self.current_piece_mirror
+            self.on_block_enter(widget, event, block)
+        elif event.button == 3:
+            self.on_block_leave(widget, event, block)
+            self.current_piece_rotation = (self.current_piece_rotation + 1) % 4
             self.on_block_enter(widget, event, block)
 
     def get_status_string(self):

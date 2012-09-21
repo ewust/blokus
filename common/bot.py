@@ -76,11 +76,12 @@ class ExhaustiveSearchBot(PlayOnReport):
     def get_move(self):
         for piece in self.board.get_remaining_piece_ids(self.player_id):
             for rotation in xrange(4):
-                for x in xrange(self.board.cols):
-                    for y in xrange(self.board.rows):
-                        move = Move(self.player_id, piece, rotation, (x,y))
-                        if self.board.is_valid_move(move):
-                            return move
+                for mirror in (False, True):
+                    for x in xrange(self.board.cols):
+                        for y in xrange(self.board.rows):
+                            move = Move(self.player_id, piece, rotation, mirror, (x,y))
+                            if self.board.is_valid_move(move):
+                                return move
 
         return super(ExhaustiveSearchBot, self).get_move()
 
