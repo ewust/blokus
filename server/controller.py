@@ -76,10 +76,13 @@ class BasicGame(Game):
                 if len(self.board.get_remaining_piece_ids(player_id)) == 0:
                     move = Move.skip(player_id)
                 else:
-                    Message.serialized(l.sock, Message.TYPE_CONTROL, "TURN")
+                    try:
+                        Message.serialized(l.sock, Message.TYPE_CONTROL, "TURN")
 
-                    m = Message(l.sock, Message.TYPE_MOVE)
-                    move = m.message_object
+                        m = Message(l.sock, Message.TYPE_MOVE)
+                        move = m.message_object
+                    except IOError:
+                        move = Move.dropped_skip(player_id)
 
                     if not self.board.is_valid_move(move):
                         Message.serialized(l.sock, Message.TYPE_STATUS,\
@@ -105,7 +108,7 @@ class BasicGame(Game):
                 self.game_logger.add_move(move)
 
                 for s in self.socks:
-                    Message.serialized(s, Message.TYPE_MOVE, move)
+                    Message.serialized(s, Message.TYPE_MOVE, move, suppress_err=True)
 
             self.go_sem[(player_id+1) % 4].release()
 

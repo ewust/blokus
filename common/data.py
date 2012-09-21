@@ -14,8 +14,9 @@ DEFAULT_PLAYER_COUNT = 4
 
 class Move(object):
     SKIP=-1
-    ILLEGAL=-2
-    TIMEOUT=-3
+    DROPPED_SKIP=-2
+    ILLEGAL=-3
+    TIMEOUT=-4
 
     move_id = 0
 
@@ -40,6 +41,10 @@ class Move(object):
         return Move(player_id, Move.SKIP)
 
     @staticmethod
+    def dropped_skip(player_id):
+        return Move(player_id, Move.DROPPED_SKIP)
+
+    @staticmethod
     def illegal(player_id):
         return Move(player_id, Move.ILLEGAL)
 
@@ -51,7 +56,7 @@ class Move(object):
         return self.piece_id < 0
 
     def is_voluntary_skip(self):
-        return self.piece_id == Move.SKIP
+        return self.piece_id in (Move.SKIP, Move.DROPPED_SKIP)
 
     def __str__(self):
         if self.piece_id == Move.SKIP:

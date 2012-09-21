@@ -1,6 +1,7 @@
 # vim: ts=4 et sw=4 sts=4
 
 import socket
+import errno
 import json
 import struct
 
@@ -35,11 +36,21 @@ class Message():
     TYPE_MOVE = 4
 
     @staticmethod
-    def serialized(sock, message_type, message_object):
+    def serialized(sock, message_type, message_object, suppress_err=None):
         msg = json.dumps((message_type, message_object), cls=BlockusEncoder)
         l = struct.pack(">I", len(msg))
-        sock.send(l)
-        sock.send(msg)
+
+        if suppress_err is None:
+            suppress_err = message_type == Message.TYPE_STATUS
+
+        try:
+            sock.send(l)
+            sock.send(msg)
+        except socket.error as e:
+            if e.errno != errno.EPIPE:
+                print "Unexpected error: ", e
+            if not suppress_err:
+                raise e
 
     def printer(self, rep):
         s = ""
@@ -76,6 +87,8 @@ class Message():
     bytes to parse out one message"""
     def __init__(self, sock, message_type=None, object_constructor=None):
         i = sock.recv(4, socket.MSG_WAITALL)
+        if len(i) == 0:
+            raise IOError, "Socket Closed"
         i = struct.unpack(">I", i)[0]
 
         msg = sock.recv(i, socket.MSG_WAITALL)
