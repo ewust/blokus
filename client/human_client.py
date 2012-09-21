@@ -1,5 +1,6 @@
 # vim: ts=4 et sw=4 sts=4
 
+import sys
 import threading
 from Queue import Queue
 
@@ -182,6 +183,8 @@ class HumanClient(Client):
 
         GObject.threads_init()
         Gdk.threads_init()
+        Gtk.init(sys.argv)
+
         Gdk.threads_enter()
         super(HumanClient, self).__init__(*args, **kwds)
         Gdk.threads_leave()
@@ -219,22 +222,24 @@ class HumanClient(Client):
         return HumanBoardGui(player_id=self.server.player_id, move_queue=self.move_queue, **kwds)
 
     class GameLoop(threading.Thread):
-        def __init__(self, game_server, bot, **kwds):
+        def __init__(self, game_server, bot, end_game, **kwds):
             self.game_server = game_server
             self.bot = bot
+            self.end_game = end_game
             super(HumanClient.GameLoop, self).__init__(**kwds)
 
         def run(self):
             while self.game_server.game_loop(self.bot):
                 pass
+            GObject.idle_add(self.end_game)
 
     def play_game(self):
         Gdk.threads_enter()
-        player_id, board = self.server.join_game(board_constructor=self.board_builder)
-        self.bot = HumanBot(player_id=player_id, board=board, move_queue=self.move_queue)
+        self.player_id, self.board = self.server.join_game(board_constructor=self.board_builder)
+        self.bot = HumanBot(player_id=self.player_id, board=self.board, move_queue=self.move_queue)
         Gdk.threads_leave()
 
-        self.loop_thread = self.GameLoop(self.server, self.bot)
+        self.loop_thread = self.GameLoop(self.server, self.bot, self.end_game)
         self.loop_thread.daemon = True
         self.loop_thread.start()
 
@@ -242,6 +247,28 @@ class HumanClient(Client):
         Gtk.main()
         Gdk.threads_leave()
 
+    def end_game(self):
+        dialog = Gtk.Dialog(
+                title="Game Over",
+                flags=Gtk.DialogFlags.MODAL|Gtk.DialogFlags.DESTROY_WITH_PARENT,
+                buttons=(Gtk.STOCK_CLOSE,Gtk.ResponseType.CLOSE),
+                )
+        ca = dialog.get_content_area()
+        s = "The game is over.\n\nScores:\n"
+        for p in xrange(self.board.player_count):
+            s += "\tPlayer %d: %d\n" % (p, self.board.get_score(p))
+        print s
+        l = Gtk.Label(s)
+        l.set_line_wrap_mode(True)
+        ca.add(l)
+        ca.show_all()
+        dialog.run()
+        dialog.destroy()
+        self.board.window.destroy()
+        Gtk.main_quit()
+        while Gtk.events_pending():
+            Gtk.main_iteration()
+        sys.exit()
+
 if __name__ == '__main__':
-    # XXX: Write unit tests?
     HumanClient().play_game()

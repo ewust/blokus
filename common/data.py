@@ -552,6 +552,22 @@ class Board(object):
     def get_remaining_piece_ids(self, player_id):
         return self.piece_library[player_id].get_remaining_piece_ids()
 
+    def get_score(self, player_id):
+        r = self.piece_library[player_id].get_remaining_piece_ids()
+        s = 0
+        if len(r):
+            for pid in r:
+                s -= len(self.piece_library[player_id][pid])
+        else:
+            s += 15
+            for m in reversed(self.moves[player_id]):
+                if m.is_skip():
+                    continue
+                if len(self.piece_library[player_id][m.piece_id]) == 1:
+                    s += 5
+                break
+        return s
+
     def is_valid_move(self, move, first_move=False, ignore_turn=False):
         if not first_move and len(self.moves[move.player_id]) == 0:
             return self.is_valid_first_move(move)
