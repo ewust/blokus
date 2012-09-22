@@ -100,6 +100,8 @@ class BasicGame(Game):
                         self.game_logger.add_move(move)
                         print "=================="
                         print "4 skips. Game Over"
+                        for s in self.socks:
+                            Message.serialized(s, Message.TYPE_MOVE, move, suppress_err=True)
                         self.done = True
                         for s in self.go_sem:
                             s.release()
