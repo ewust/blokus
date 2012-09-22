@@ -98,6 +98,6 @@ class GameParser(object):
                 player_id=int(player_id),
                 piece_id=int(piece_id),
                 rotation=int(rotation),
-                mirror=bool(mirror),
+                mirror=bool(int(mirror)),
                 position=(int(x),int(y)),
                 )
