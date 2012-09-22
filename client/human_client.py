@@ -19,6 +19,8 @@ from comm import GameServer
 
 from bots.human_bot import HumanBot
 
+__version__ = 0.1
+
 class HumanBoardGui(BoardGui):
     def __init__(self, player_id, move_queue, *args, **kwds):
         self.player_id = player_id
@@ -47,6 +49,17 @@ class HumanBoardGui(BoardGui):
             except AttributeError as e:
                 pass
 
+    def build_menu_line(self):
+        title_string = Gtk.Label(label="Human Bot v" + str(__version__))
+        self.menu_line.pack_start(title_string, False, False, 10)
+
+        skip_button = Gtk.Button(label="Skip My Turn")
+        skip_button.connect('clicked', self.on_skip)
+        self.menu_line.pack_start(skip_button, True, True, 0)
+
+        self.turn_id = Gtk.Label(label="Turn 0 / %d" % (len(self.move_history)))
+        self.menu_line.pack_end(self.turn_id, False, False, 10)
+
     def build_piece_libraries(self):
         self.piece_library = {p : PieceLibraryGui(
                     player_id=p,
@@ -59,6 +72,11 @@ class HumanBoardGui(BoardGui):
                     restrict_piece_ids_to=self.restrict_piece_ids_to,
                     on_button_press_event=self.on_piece_tray_click,
                     )
+
+    def on_skip(self, widget, data=None):
+        move = Move.skip(self.player_id)
+        self.move_queue.put(move, block=False)
+        self.current_piece = None
 
     def on_piece_tray_click(self, widget, event, piece):
         if piece.clicked:
