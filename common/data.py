@@ -689,6 +689,9 @@ class Board(object):
         if not self.is_valid_move(move, True):
             return False
 
+        if move.is_skip():
+            return True
+
         for coord in self.move_coords(move):
             if coord in self.corners:
                 return True
